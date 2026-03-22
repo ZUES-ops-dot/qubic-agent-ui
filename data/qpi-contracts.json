@@ -1,0 +1,786 @@
+[
+  {
+    "id": "qpi-skeleton",
+    "title": "QPI Basic Contract Skeleton (Official HM25 Template)",
+    "content": "using namespace QPI;\nstruct HM25 { };\nstruct Random : public ContractBase {\npublic:\n    struct Echo_input{};\n    struct Echo_output{};\n    struct Burn_input{};\n    struct Burn_output{};\n    struct GetStats_input {};\n    struct GetStats_output {\n        uint64 numberOfEchoCalls;\n        uint64 numberOfBurnCalls;\n    };\nprivate:\n    uint64 numberOfEchoCalls;\n    uint64 numberOfBurnCalls;\n    PUBLIC_PROCEDURE(Echo)\n    {\n        state.numberOfEchoCalls++;\n        if (qpi.invocationReward() > 0) { qpi.transfer(qpi.invocator(), qpi.invocationReward()); }\n    }\n    PUBLIC_PROCEDURE(Burn)\n    {\n        state.numberOfBurnCalls++;\n        if (qpi.invocationReward() > 0) { qpi.burn(qpi.invocationReward()); }\n    }\n    PUBLIC_FUNCTION(GetStats)\n    {\n        output.numberOfBurnCalls = state.numberOfBurnCalls;\n        output.numberOfEchoCalls = state.numberOfEchoCalls;\n    }\n    REGISTER_USER_FUNCTIONS_AND_PROCEDURES\n    {\n        REGISTER_USER_PROCEDURE(Echo, 1);\n        REGISTER_USER_PROCEDURE(Burn, 2);\n        REGISTER_USER_FUNCTION(GetStats, 1);\n    }\n    INITIALIZE\n    {\n        state.numberOfEchoCalls = 0;\n        state.numberOfBurnCalls = 0;\n    }\n};",
+    "source": "qubic-hackathon",
+    "type": "template",
+    "tags": [
+      "skeleton",
+      "template",
+      "echo",
+      "burn",
+      "initialize"
+    ]
+  },
+  {
+    "id": "qpi-reward-patterns",
+    "title": "QPI Invocation Reward Handling Patterns",
+    "content": "// Pattern 1: Refund - procedure doesn't need payment\nPUBLIC_PROCEDURE(FreeAction) {\n    state.actionCount++;\n    if (qpi.invocationReward() > 0) { qpi.transfer(qpi.invocator(), qpi.invocationReward()); }\n}\n// Pattern 2: Accept payment\nPUBLIC_PROCEDURE(PaidAction) {\n    if (qpi.invocationReward() >= MINIMUM_PAYMENT) {\n        state.totalCollected = state.totalCollected + qpi.invocationReward();\n    } else {\n        if (qpi.invocationReward() > 0) { qpi.transfer(qpi.invocator(), qpi.invocationReward()); }\n    }\n}\n// Pattern 3: Burn QU to fill execution fee reserve\nPUBLIC_PROCEDURE(BurnAction) {\n    if (qpi.invocationReward() > 0) { qpi.burn(qpi.invocationReward()); }\n}\n// qpi.invocator() = caller address, qpi.originator() = original tx signer\n// qpi.invocationReward() = QU sent with this call",
+    "source": "qubic-core",
+    "type": "pattern",
+    "tags": [
+      "invocation-reward",
+      "transfer",
+      "burn",
+      "payment",
+      "security"
+    ]
+  },
+  {
+    "id": "qpi-container-types",
+    "title": "QPI Container Types",
+    "content": "// Array<T, L> - Fixed array of L elements of type T (L must be power of 2)\nArray<uint64, 1024> balances;\n// BitArray<L> - Array of L bits (L must be power of 2)\nBitArray<256> flags;\n// Collection<T, L> - Priority queues per ID point-of-view, capacity L\nCollection<OrderData, 65536> orders;\n// HashMap<KeyT, ValueT, L> - Hash map, ~constant time lookup/insert/remove\nHashMap<id, uint64, 4096> userBalances;\n// HashSet<KeyT, L> - Hash set of keys\nHashSet<id, 1024> registeredUsers;\n// IMPORTANT: Call cleanup() or cleanupIfNeeded() at END_EPOCH if removing items\n// L (capacity) must be power of 2 for Array and BitArray",
+    "source": "qubic-core",
+    "type": "reference",
+    "tags": [
+      "containers",
+      "array",
+      "hashmap",
+      "collection",
+      "data-structures"
+    ]
+  },
+  {
+    "id": "qpi-system-procedures",
+    "title": "QPI System Procedures (Lifecycle Hooks)",
+    "content": "// System procedures are called by the Qubic Core at specific points:\n// INITIALIZE - Called once after successful IPO, before construction epoch\nINITIALIZE { state.myVar = 0; }\n// BEGIN_EPOCH - Called before each epoch starts\nBEGIN_EPOCH { /* reset epoch-scoped counters */ }\n// END_EPOCH - Called after each epoch ends\nEND_EPOCH { /* cleanup, distribute rewards */ }\n// BEGIN_TICK - Called before each tick's transactions\nBEGIN_TICK { /* per-tick setup */ }\n// END_TICK - Called after all tick transactions\nEND_TICK { /* per-tick cleanup */ }\n// POST_INCOMING_TRANSFER - Called after QU transferred to this contract\n// Input: PostIncomingTransfer_input { id sourceId; sint64 amount; uint8 type; }\n// TransferType::procedureTransaction, standardTransaction, qpiTransfer, etc.\n// NOTE: qpi.invocator() returns 0 in POST_INCOMING_TRANSFER, use input.sourceId\n// All have _WITH_LOCALS variants for local variables",
+    "source": "qubic-core",
+    "type": "reference",
+    "tags": [
+      "system-procedures",
+      "lifecycle",
+      "initialize",
+      "epoch",
+      "tick"
+    ]
+  },
+  {
+    "id": "qpi-locals-pattern",
+    "title": "QPI _WITH_LOCALS Pattern for Local Variables",
+    "content": "// Local variables on the function call stack are FORBIDDEN in QPI.\n// Use _WITH_LOCALS macros and define a _locals struct.\n\nstruct MyFunction_locals {\n    uint64 tempSum;\n    uint32 loopIndex;\n};\n\nPUBLIC_FUNCTION_WITH_LOCALS(MyFunction)\n{\n    locals.tempSum = 0;\n    for (locals.loopIndex = 0; locals.loopIndex < 10; locals.loopIndex++)\n    {\n        locals.tempSum = locals.tempSum + state.values.get(locals.loopIndex);\n    }\n    output.total = locals.tempSum;\n}\n\n// Available macros: PUBLIC_FUNCTION_WITH_LOCALS, PUBLIC_PROCEDURE_WITH_LOCALS,\n// PRIVATE_FUNCTION_WITH_LOCALS, PRIVATE_PROCEDURE_WITH_LOCALS,\n// INITIALIZE_WITH_LOCALS, BEGIN_EPOCH_WITH_LOCALS, END_EPOCH_WITH_LOCALS, etc.",
+    "source": "qubic-core",
+    "type": "pattern",
+    "tags": [
+      "locals",
+      "variables",
+      "loops",
+      "with-locals"
+    ]
+  },
+  {
+    "id": "qpi-private-functions",
+    "title": "QPI PUBLIC vs PRIVATE Functions/Procedures",
+    "content": "// PUBLIC_FUNCTION - Read-only, callable by other contracts with larger index\n// PRIVATE_FUNCTION - Read-only, NOT callable by other contracts\n// PUBLIC_PROCEDURE - State-modifying, callable by other contracts with larger index\n// PRIVATE_PROCEDURE - State-modifying, NOT callable by other contracts\n// Functions CANNOT modify state. Procedures CAN.\n// Functions can be called by procedures, but NOT vice versa.\n// Logging is NOT allowed inside functions.\n// REGISTER_USER_FUNCTION and REGISTER_USER_PROCEDURE have SEPARATE inputType namespaces.\n// The same inputType number CAN be used for both a function and a procedure.",
+    "source": "qubic-core",
+    "type": "reference",
+    "tags": [
+      "public",
+      "private",
+      "function",
+      "procedure",
+      "access-control"
+    ]
+  },
+  {
+    "id": "qpi-restrictions",
+    "title": "QPI C++ Restrictions (Official from contracts.md)",
+    "content": "FORBIDDEN in QPI contracts:\n- Local variables on function call stack (use _WITH_LOCALS macros)\n- Loop index variables like for(int i=0;...) (use _locals struct)\n- Pointers: defining, casting, dereferencing (* only allowed for multiplication)\n- Characters [ and ] (no low-level arrays, use Array<T,L>)\n- All preprocessor directives # (no #include, #pragma, #ifdef)\n- float and double (non-deterministic arithmetic)\n- Division / and modulo % operators (use div() and mod(), return 0 on div-by-zero)\n- String literals \" and char literals ' (can jump to random memory)\n- Variadic arguments ... (parameter packs forbidden)\n- Double underscores __ (reserved for internal functions)\n- QpiContext and const_cast keywords\n- Scope resolution :: except for contract-defined structs/enums and qpi.h\n- union keyword\n- typedef and using at global scope (except using namespace QPI)\n- Global variables (only global constants prefixed with contract name)\n- Recursion depth limit: 10 levels\n- Input/output structs may only use: integer types, bit, id, Array, BitArray, and structs of these\n- Collection, HashMap, HashSet FORBIDDEN in public interface (input/output structs)",
+    "source": "qubic-core",
+    "type": "reference",
+    "tags": [
+      "restrictions",
+      "forbidden",
+      "banned",
+      "rules",
+      "compilation"
+    ]
+  },
+  {
+    "id": "qpi-deployment-process",
+    "title": "QPI Contract Deployment Process (Official)",
+    "content": "Steps to deploy a Qubic smart contract:\n1. Write contract as single .h file in src/contracts/ directory\n2. Fork qubic/core repo, create branch feature/YYYY-MM-DD-YourContractName\n3. Add contract in src/contract_core/contract_def.h with next unused index\n4. Implement GoogleTest tests in test/contract_[name].cpp\n5. Pass Qubic Contract Verification Tool (checks C++ restrictions)\n6. Open PR to develop branch, request Core dev review\n7. Core devs review for restricted C++ compliance and style\n8. Test in multi-node testnet\n9. Submit proposal to GQMPROP smart contract with description\n10. Computors vote in epoch N (need 451+ votes, majority yes)\n11. If accepted: IPO held in epoch N+1 (Dutch auction, QU burned for fee reserve)\n12. If IPO successful: Contract constructed in epoch N+2 (state initialized, procedures callable)\nContract naming: file=YourContract.h, shares=YCN (max 7 chars), state struct=YOURCONTRACTNAME\nSmart contract code is generally IMMUTABLE after deployment.",
+    "source": "qubic-core",
+    "type": "reference",
+    "tags": [
+      "deployment",
+      "proposal",
+      "IPO",
+      "quorum",
+      "computors",
+      "voting"
+    ]
+  },
+  {
+    "id": "qpi-assets",
+    "title": "QPI Asset Management",
+    "content": "// Issue a new asset with fixed number of shares\n// qpi.issueAsset() - creates asset, managed by issuing contract\n// Asset name: up to 7 chars, first must be A-Z, rest A-Z or 0-9\n// Asset identified by pair (issuer_id, asset_name)\n// qpi.transferShareOwnershipAndPossession() - transfer shares\n// qpi.releaseShares() / qpi.acquireShares() - transfer management rights\n// QX contract is the standard exchange for trading assets\n// 676 contract shares created after IPO, shareholders receive passive income\n// qpi.numberOfShares() - query share count with optional filters",
+    "source": "qubic-core",
+    "type": "reference",
+    "tags": [
+      "assets",
+      "shares",
+      "IPO",
+      "QX",
+      "transfer",
+      "ownership"
+    ]
+  },
+  {
+    "id": "qpi-rpc-endpoints",
+    "title": "Qubic RPC API Endpoints",
+    "content": "Mainnet RPC: https://rpc.qubic.org\nPublic Testnet RPC: https://testnet-rpc.qubicdev.com\n\nKey endpoints:\nGET /v1/status - Network stats (supply, addresses, price, marketCap)\nGET /v1/tick-info - Current tick info\nGET /v1/balances/{addressId} - Balance query\nPOST /v1/querySmartContract - Read contract state (functions)\nPOST /v1/broadcast-transaction - Execute contract procedures\nGET /v1/transaction/{txId} - Transaction details\nGET /v1/transaction-status/{txId} - Transaction status\nGET /v1/tick-transactions/{tick} - Transactions in a tick\nPOST https://api.qubic.org/v1/events/decodeEvent - Decode contract events\n\nFor querySmartContract, input/output is Base64 encoded.\nResponse: { responseData: '<base64>' } - decode and parse per output struct.",
+    "source": "qubic-hackathon",
+    "type": "reference",
+    "tags": [
+      "RPC",
+      "API",
+      "testnet",
+      "endpoints",
+      "query",
+      "transaction"
+    ]
+  },
+  {
+    "id": "qpi-frontend-interaction",
+    "title": "QPI Frontend Smart Contract Interaction (JavaScript)",
+    "content": "// Reading contract state via RPC:\nconst HM25_CONTRACT_INDEX = 12;\nconst FUNC_GET_STATS = 1;\nconst queryData = { contractIndex: HM25_CONTRACT_INDEX, inputType: FUNC_GET_STATS, inputSize: 0, requestData: '' };\nconst response = await fetch(`${endpoint}/v1/querySmartContract`, { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify(queryData) });\nconst json = await response.json();\nconst raw = base64.decode(json.responseData);\nconst buf = Buffer.from(raw, 'binary');\n// Parse per output struct (uint64 = 8 bytes LE)\nconst echoCalls = buf.readBigUInt64LE(0);\nconst burnCalls = buf.readBigUInt64LE(8);\n\n// Executing procedures requires building + signing a transaction\n// Transaction targets contract by setting destination to contract index\n// inputType identifies which procedure (e.g. PROC_ECHO=1, PROC_BURN=2)\n// Then broadcast via POST /v1/broadcast-transaction",
+    "source": "qubic-hackathon",
+    "type": "reference",
+    "tags": [
+      "frontend",
+      "javascript",
+      "RPC",
+      "query",
+      "transaction",
+      "base64"
+    ]
+  },
+  {
+    "id": "qpi-oracle-machines",
+    "title": "Qubic Oracle Machines — Real-World Data for Smart Contracts",
+    "content": "Oracle Machines bridge smart contracts to real-world data via QPI.\n\nArchitecture (3 layers):\n1. Qubic Core Nodes — where contracts execute\n2. Oracle Machine Node — middleware (routing, caching, validation)\n3. External Oracle Services — price feeds, weather APIs, event providers\n\nData Flow:\nContract sends OracleMachineQuery -> Oracle Machine fetches data -> OracleMachineReply returned -> Quorum verifies via OracleReplyCommitTransaction per Computor -> OracleReplyRevealTransaction reveals on-chain.\n\nInterface Types:\n- Price Interface (Index 0): Query {Oracle, Timestamp, Currency1, Currency2} -> Reply {Numerator: sint64, Denominator: sint64}\n- Mock Interface (Index 1): For testing\n\nTwo Request Modes:\n- One-Time Query: single request/response\n- Subscription: continuous updates at intervals\n\nRequest Tracking: unique ID per request. Status: Pending, Successful, or Failed (timeout).\nFees: burned (deflationary). Level set by Quorum.\nLatency: 3-5 ticks (~10 seconds).\nCaching: TTL-based with automatic cleanup.\n\nBuilding Custom Oracles:\n1. Define interface structures in Qubic Core (query/reply formats)\n2. Inherit from BaseOracleService\n3. Implement data providers for external APIs\n4. Add configuration entries\n5. Register in build system\nRepo: github.com/qubic/oracle-machine\n\nUse Cases: DeFi price feeds, prediction markets, parametric insurance, gaming/NFTs with real-world data.",
+    "source": "qubic-docs",
+    "type": "reference",
+    "tags": [
+      "oracle",
+      "oracle-machine",
+      "price-feed",
+      "real-world-data",
+      "DeFi",
+      "subscription",
+      "OracleMachineQuery"
+    ]
+  },
+  {
+    "id": "qpi-oracle-contract-pattern",
+    "title": "Oracle-Consuming Smart Contract Pattern",
+    "content": "// Pattern: Contract that consumes Oracle Machine price data\nusing namespace QPI;\n\nstruct PRICETRACKER : public ContractBase {\npublic:\n    // State\n    sint64 lastPriceNumerator;\n    sint64 lastPriceDenominator;\n    uint32 lastUpdateTick;\n    uint64 totalQueries;\n\n    // Oracle callback receives price data after Quorum verification\n    struct UpdatePrice_input {\n        sint64 numerator;\n        sint64 denominator;\n        uint32 sourceTick;\n    };\n    struct UpdatePrice_output {};\n\n    struct GetPrice_input {};\n    struct GetPrice_output {\n        sint64 numerator;\n        sint64 denominator;\n        uint32 lastUpdateTick;\n    };\n\n    PUBLIC_PROCEDURE(UpdatePrice)\n    {\n        // Refund invocation reward if sent\n        if (qpi.invocationReward() > 0) {\n            qpi.transfer(qpi.invocator(), qpi.invocationReward());\n        }\n        state.lastPriceNumerator = input.numerator;\n        state.lastPriceDenominator = input.denominator;\n        state.lastUpdateTick = input.sourceTick;\n        state.totalQueries = state.totalQueries + 1;\n    }\n\n    PUBLIC_FUNCTION(GetPrice)\n    {\n        output.numerator = state.lastPriceNumerator;\n        output.denominator = state.lastPriceDenominator;\n        output.lastUpdateTick = state.lastUpdateTick;\n    }\n\n    REGISTER_USER_FUNCTIONS_AND_PROCEDURES\n        REGISTER_USER_PROCEDURE(UpdatePrice, 1);\n        REGISTER_USER_FUNCTION(GetPrice, 1);\n    END_REGISTER_USER_FUNCTIONS_AND_PROCEDURES\n\n    INITIALIZE {\n        state.lastPriceNumerator = 0;\n        state.lastPriceDenominator = 1;\n        state.lastUpdateTick = 0;\n        state.totalQueries = 0;\n    }\n};",
+    "source": "qubic-docs",
+    "type": "contract",
+    "tags": [
+      "oracle",
+      "price-feed",
+      "pattern",
+      "DeFi",
+      "example",
+      "oracle-consumer"
+    ]
+  },
+  {
+    "id": "qpi-post-incoming-transfer",
+    "title": "POST_INCOMING_TRANSFER Callback — Handling Incoming QU",
+    "content": "POST_INCOMING_TRANSFER (or POST_INCOMING_TRANSFER_WITH_LOCALS) notifies the contract about incoming QU transfers.\n\nInput struct (provided by system):\nstruct PostIncomingTransfer_input {\n    id sourceId;       // entity that sent QU\n    sint64 amount;     // number of QU transferred\n    uint8 type;        // transfer type (see below)\n};\n\nTransfer Types:\n- TransferType::procedureTransaction — runs after transferring invocation reward, before procedure execution\n- TransferType::standardTransaction — transaction with inputType == 0\n- TransferType::qpiTransfer — triggered by qpi.transfer()\n- TransferType::qpiDistributeDividends — triggered by qpi.distributeDividends()\n- TransferType::revenueDonation — contract receives computor revenue donation (end of epoch)\n- TransferType::ipoBidRefund — IPO bid refund via qpi.bidInIPO()\n\nCRITICAL RULES:\n- qpi.invocator() returns 0 inside POST_INCOMING_TRANSFER — use input.sourceId\n- qpi.invocationReward() returns 0 — use input.amount\n- Cannot call qpi.distributeDividends() or qpi.bidInIPO() inside callback\n- qpi.transfer() only allowed to non-contract entities\n- Invoking user procedures from callback executes with invocationReward() == 0",
+    "source": "contracts.md",
+    "type": "reference",
+    "tags": [
+      "POST_INCOMING_TRANSFER",
+      "callback",
+      "transfer",
+      "security",
+      "invocator",
+      "sourceId"
+    ]
+  },
+  {
+    "id": "qpi-vulnerability-overflow",
+    "title": "Vulnerability: uint64 Integer Overflow",
+    "content": "VULNERABILITY: uint64 silently wraps on overflow (max 18,446,744,073,709,551,615).\n\nExample (VULNERABLE):\nPUBLIC_PROCEDURE(Deposit) {\n    state.balance = state.balance + input.amount;  // OVERFLOW if balance near MAX\n}\n\nFix — add bounds check:\nPUBLIC_PROCEDURE(Deposit) {\n    if (state.balance + input.amount >= state.balance) {  // overflow check\n        state.balance = state.balance + input.amount;\n    }\n}\n\nOr use saturating arithmetic pattern:\n// Saturating add: result = min(a + b, MAX_UINT64)\nif (input.amount > 0 && state.balance > 18446744073709551615ULL - input.amount) {\n    // Would overflow — reject or cap\n} else {\n    state.balance = state.balance + input.amount;\n}\n\nAlso applies to: sint64 (signed overflow is undefined behavior), uint32, multiplication overflow.",
+    "source": "security",
+    "type": "vulnerability",
+    "tags": [
+      "overflow",
+      "uint64",
+      "vulnerability",
+      "security",
+      "arithmetic",
+      "bounds-check"
+    ]
+  },
+  {
+    "id": "qpi-vulnerability-reward-lock",
+    "title": "Vulnerability: Invocation Reward Locked in Contract",
+    "content": "VULNERABILITY: If a PUBLIC_PROCEDURE does not handle invocationReward(), QU sent by callers is permanently locked.\n\nEvery transaction invoking a procedure can include an amount (invocation reward). If the procedure does not explicitly transfer or burn it, the QU stays in the contract balance with no way to recover.\n\nExample (VULNERABLE):\nPUBLIC_PROCEDURE(DoSomething) {\n    state.counter = state.counter + 1;\n    // invocationReward() not handled — QU locked forever!\n}\n\nFix — refund pattern:\nPUBLIC_PROCEDURE(DoSomething) {\n    if (qpi.invocationReward() > 0) {\n        qpi.transfer(qpi.invocator(), qpi.invocationReward());\n    }\n    state.counter = state.counter + 1;\n}\n\nOr if procedure requires payment:\nPUBLIC_PROCEDURE(PaidAction) {\n    if (qpi.invocationReward() < REQUIRED_FEE) {\n        // Refund and abort\n        if (qpi.invocationReward() > 0) {\n            qpi.transfer(qpi.invocator(), qpi.invocationReward());\n        }\n        return;\n    }\n    // Keep fee, refund excess\n    sint64 excess = qpi.invocationReward() - REQUIRED_FEE;\n    if (excess > 0) {\n        qpi.transfer(qpi.invocator(), excess);\n    }\n    qpi.burn(REQUIRED_FEE);\n    // ... do work\n}",
+    "source": "security",
+    "type": "vulnerability",
+    "tags": [
+      "invocation-reward",
+      "vulnerability",
+      "locked-funds",
+      "refund",
+      "security",
+      "transfer"
+    ]
+  },
+  {
+    "id": "qpi-vulnerability-state-in-function",
+    "title": "Vulnerability: State Modification in PUBLIC_FUNCTION (Silent Bug)",
+    "content": "VULNERABILITY: In PUBLIC_FUNCTION, the state parameter is const. Any assignment to state.xxx compiles but silently does nothing — the change is discarded.\n\nExample (VULNERABLE — compiles but state never changes):\nPUBLIC_FUNCTION(IncrementCounter) {\n    state.counter = state.counter + 1;  // SILENT BUG: state is const!\n    output.newValue = state.counter;     // Returns old value\n}\n\nFix — use PUBLIC_PROCEDURE for state changes:\nPUBLIC_PROCEDURE(IncrementCounter) {\n    if (qpi.invocationReward() > 0) {\n        qpi.transfer(qpi.invocator(), qpi.invocationReward());\n    }\n    state.counter = state.counter + 1;  // Works — state is mutable in procedures\n}\n\nRule: PUBLIC_FUNCTION = read-only query. PUBLIC_PROCEDURE = state mutation.\nAlso: qpi.transfer(), qpi.burn(), qpi.issueAsset() are forbidden in PUBLIC_FUNCTION.",
+    "source": "security",
+    "type": "vulnerability",
+    "tags": [
+      "state-modification",
+      "PUBLIC_FUNCTION",
+      "const",
+      "silent-bug",
+      "vulnerability"
+    ]
+  },
+  {
+    "id": "qpi-vulnerability-epoch-boundary",
+    "title": "Vulnerability: Epoch Boundary Race Conditions",
+    "content": "VULNERABILITY: State accessed in END_EPOCH and BEGIN_EPOCH runs at epoch boundaries. User procedures run during ticks. If state is shared, race conditions can occur.\n\nSystem procedure execution order at epoch boundary:\n1. Last tick of epoch N finishes\n2. END_EPOCH runs (cleanup, snapshot)\n3. Revenue donations processed (POST_INCOMING_TRANSFER with TransferType::revenueDonation)\n4. IPO refunds processed\n5. BEGIN_EPOCH runs (reset counters, initialize new epoch)\n6. First tick of epoch N+1 starts\n\nExample (VULNERABLE):\nEND_EPOCH {\n    state.epochRewards = state.totalFees;  // snapshot\n    state.totalFees = 0;                    // reset\n}\nPUBLIC_PROCEDURE(PayFee) {\n    state.totalFees = state.totalFees + qpi.invocationReward();\n    // If this runs in last tick and END_EPOCH runs immediately after,\n    // the fee from this tick may or may not be included in epochRewards\n}\n\nFix: Use separate accumulators and swap at epoch boundary.\nEND_EPOCH {\n    state.epochRewards = state.currentEpochFees;\n    state.currentEpochFees = 0;\n}",
+    "source": "security",
+    "type": "vulnerability",
+    "tags": [
+      "epoch-boundary",
+      "race-condition",
+      "END_EPOCH",
+      "BEGIN_EPOCH",
+      "vulnerability"
+    ]
+  },
+  {
+    "id": "qpi-hashmap-cleanup-pattern",
+    "title": "HashMap/HashSet Cleanup Pattern at END_EPOCH",
+    "content": "HashMap, HashSet, and Collection do not reclaim slots when items are removed. This degrades lookup performance over time.\n\nPattern: Call cleanup() or reset() at END_EPOCH.\n\nstruct MYCONTRACT : public ContractBase {\n    HashMap<id, uint64, 1024> balances;  // capacity must be power of 2\n    HashSet<id, 256> blacklist;\n\n    END_EPOCH {\n        // Option 1: cleanup() — reclaims removed slots, keeps existing data\n        state.balances.cleanup();\n        state.blacklist.cleanup();\n\n        // Option 2: reset() — clears everything (use if data is per-epoch)\n        // state.balances.reset();\n    }\n\n    // Alternative: call cleanupIfNeeded() after procedures that do many removes\n    PUBLIC_PROCEDURE(RemoveUser) {\n        state.balances.remove(input.userId);\n        state.balances.cleanupIfNeeded();  // only runs if fragmentation is high\n    }\n};\n\nPerformance: cleanup() is expensive (rehashes all entries). Only call at epoch boundaries or after bulk removes.\nCapacity: HashMap/HashSet performance degrades above 80% population. Size capacity accordingly.",
+    "source": "contracts.md",
+    "type": "pattern",
+    "tags": [
+      "HashMap",
+      "HashSet",
+      "cleanup",
+      "END_EPOCH",
+      "performance",
+      "Collection"
+    ]
+  },
+  {
+    "id": "qpi-proposals-voting",
+    "title": "QPI Proposals and Voting On-Chain",
+    "content": "Proposals and voting provide on-chain decision-making implemented in contracts. Shareholders (those who own contract shares from IPO) can vote.\n\nKey concepts:\n- Proposals are submitted by shareholders\n- Voting is weighted by share ownership\n- Results are determined by Quorum\n- Detailed API described in contracts_proposals.md\n\nCFB has an alternative idea for proposal-free voting on shareholder variables planned for QX, RANDOM, and MLM contracts (not yet implemented).\n\nFor implementing governance:\n1. Track shares via state (shareholders are tracked by system)\n2. Define proposal structs for each decision type\n3. Use QPI voting macros to tally votes\n4. Execute approved proposals in system procedures\n\nRef: github.com/qubic/core/blob/main/doc/contracts_proposals.md",
+    "source": "contracts.md",
+    "type": "reference",
+    "tags": [
+      "proposals",
+      "voting",
+      "governance",
+      "shareholders",
+      "IPO",
+      "on-chain"
+    ]
+  },
+  {
+    "id": "qpi-cross-contract-calls",
+    "title": "Cross-Contract Calls — Invoking Other Contracts",
+    "content": "Contracts can call user functions and procedures of other contracts.\n\nCalling a function (read-only, returns data):\n// From within a procedure or function:\nOtherContract::GetPrice_input fnInput;\nOtherContract::GetPrice_output fnOutput;\nqpi.callFunction(OTHER_CONTRACT_INDEX, fnInput, fnOutput);\n// fnOutput now contains the result\n\nInvoking a procedure (state-changing, requires QU transfer):\n// From within a procedure:\nOtherContract::Deposit_input procInput;\nprocInput.amount = 1000;\nqpi.invokeProcedure(OTHER_CONTRACT_INDEX, procInput, TRANSFER_AMOUNT);\n// TRANSFER_AMOUNT QU sent as invocation reward\n\nRules:\n- Functions can call other functions (read-only chain)\n- Procedures can call functions and invoke procedures\n- Functions CANNOT invoke procedures (state-changing)\n- Cross-contract calls add to the recursion depth (limit: 10)\n- The invoked procedure's POST_INCOMING_TRANSFER fires with TransferType::qpiTransfer\n\nCaution: If the target contract procedure calls back, beware of reentrancy patterns.",
+    "source": "contracts.md",
+    "type": "reference",
+    "tags": [
+      "cross-contract",
+      "callFunction",
+      "invokeProcedure",
+      "inter-contract",
+      "reentrancy"
+    ]
+  },
+  {
+    "id": "qpi-random-contract-pattern",
+    "title": "RANDOM Contract Pattern — On-Chain Randomness",
+    "content": "The RANDOM contract (contract index 2) provides verifiable randomness on Qubic.\n\nPattern for consuming randomness in your contract:\nstruct LOTTERY : public ContractBase {\n    Array<id, 256> participants;\n    uint32 participantCount;\n    uint64 prizePool;\n\n    PUBLIC_PROCEDURE(Enter) {\n        if (qpi.invocationReward() < ENTRY_FEE) {\n            if (qpi.invocationReward() > 0)\n                qpi.transfer(qpi.invocator(), qpi.invocationReward());\n            return;\n        }\n        sint64 excess = qpi.invocationReward() - ENTRY_FEE;\n        if (excess > 0)\n            qpi.transfer(qpi.invocator(), excess);\n\n        state.participants.set(state.participantCount, qpi.invocator());\n        state.participantCount = state.participantCount + 1;\n        state.prizePool = state.prizePool + ENTRY_FEE;\n    }\n\n    // Draw winner using tick-based entropy\n    PUBLIC_PROCEDURE(Draw) {\n        if (qpi.invocationReward() > 0)\n            qpi.transfer(qpi.invocator(), qpi.invocationReward());\n        if (state.participantCount == 0) return;\n        // Use tick number as entropy source (simple approach)\n        uint32 winnerIdx = mod(qpi.tick(), state.participantCount);\n        id winner = state.participants.get(winnerIdx);\n        qpi.transfer(winner, state.prizePool);\n        state.prizePool = 0;\n        state.participantCount = 0;\n    }\n};\n\nNote: For production randomness, use the RANDOM contract's output or Computor-derived entropy rather than tick number alone.",
+    "source": "qubic-core",
+    "type": "contract",
+    "tags": [
+      "RANDOM",
+      "randomness",
+      "lottery",
+      "pattern",
+      "entropy",
+      "example"
+    ]
+  },
+  {
+    "id": "qpi-token-contract-pattern",
+    "title": "Token Contract Pattern — Asset Issuance and Transfer",
+    "content": "Pattern for a token contract using QPI asset management:\n\nusing namespace QPI;\nstruct MYTOKEN : public ContractBase {\n    uint64 totalSupply;\n    uint64 maxSupply;\n\n    struct Mint_input { uint64 amount; };\n    struct Mint_output {};\n    struct GetSupply_input {};\n    struct GetSupply_output { uint64 total; uint64 max; };\n\n    INITIALIZE {\n        // Issue asset during initialization (after IPO)\n        // Asset name: 1-7 chars, first A-Z, rest A-Z/0-9\n        qpi.issueAsset(MYTKN, SELF, 0, 1000000, 1);  // name, issuer, managingRight, numShares, unitOfMeasurement\n        state.totalSupply = 1000000;\n        state.maxSupply = 10000000;\n    }\n\n    PUBLIC_PROCEDURE(Mint) {\n        if (qpi.invocationReward() > 0)\n            qpi.transfer(qpi.invocator(), qpi.invocationReward());\n        if (state.totalSupply + input.amount > state.maxSupply) return;\n        if (state.totalSupply + input.amount < state.totalSupply) return;  // overflow check\n        qpi.issueAsset(MYTKN, SELF, 0, input.amount, 1);\n        state.totalSupply = state.totalSupply + input.amount;\n    }\n\n    PUBLIC_FUNCTION(GetSupply) {\n        output.total = state.totalSupply;\n        output.max = state.maxSupply;\n    }\n\n    REGISTER_USER_FUNCTIONS_AND_PROCEDURES\n        REGISTER_USER_PROCEDURE(Mint, 1);\n        REGISTER_USER_FUNCTION(GetSupply, 1);\n    END_REGISTER_USER_FUNCTIONS_AND_PROCEDURES\n};\n\nAsset Name Rules: 1-7 characters. First character A-Z. Remaining A-Z or 0-9.\nShares can be transferred via qpi.transferShareOwnershipAndPossession().",
+    "source": "contracts.md",
+    "type": "contract",
+    "tags": [
+      "token",
+      "asset",
+      "issueAsset",
+      "mint",
+      "shares",
+      "pattern"
+    ]
+  },
+  {
+    "id": "qpi-amm-defi-pattern",
+    "title": "QPI AMM (Automated Market Maker) DeFi Pattern",
+    "content": "AMM pattern using constant-product formula (x*y=k) in QPI:\nstruct AMM_locals { uint64 amountOut; uint64 newReserveA; uint64 newReserveB; };\nPUBLIC_PROCEDURE_WITH_LOCALS(Swap) {\n    if (qpi.invocationReward() == 0) return;\n    // x * y = k invariant\n    locals.amountOut = div(state.reserveB * qpi.invocationReward(), state.reserveA + qpi.invocationReward());\n    if (locals.amountOut == 0) { qpi.transfer(qpi.invocator(), qpi.invocationReward()); return; }\n    state.reserveA = state.reserveA + qpi.invocationReward();\n    state.reserveB = state.reserveB - locals.amountOut;\n    qpi.transfer(qpi.invocator(), locals.amountOut);\n}\nNote: Use div() not / operator. Validate reserves > 0 before swap. No floating point.",
+    "source": "qubic-core",
+    "type": "contract",
+    "tags": [
+      "DeFi",
+      "AMM",
+      "swap",
+      "liquidity",
+      "constant-product",
+      "pattern"
+    ]
+  },
+  {
+    "id": "qpi-dividend-distribution",
+    "title": "QPI Dividend Distribution Pattern",
+    "content": "Distribute QU to all shareholders at epoch end:\nEND_EPOCH {\n    if (state.epochRevenue == 0) return;\n    // qpi.distributeDividends(amount) distributes proportionally to all 676 shareholders\n    // Amount is total QU to distribute — split by share ownership automatically\n    qpi.distributeDividends(state.epochRevenue);\n    state.epochRevenue = 0;\n}\n// Accumulate revenue during epoch:\nPUBLIC_PROCEDURE(AcceptPayment) {\n    state.epochRevenue = state.epochRevenue + qpi.invocationReward();\n}\n// Rules:\n// - Only callable in system procedures (BEGIN/END_EPOCH, POST_INCOMING_TRANSFER)\n// - NOT callable inside PUBLIC_PROCEDURE or PUBLIC_FUNCTION\n// - Distributes to 676 IPO shareholders proportionally\n// - Triggers POST_INCOMING_TRANSFER on receiving contracts with TransferType::qpiDistributeDividends",
+    "source": "contracts.md",
+    "type": "pattern",
+    "tags": [
+      "dividend",
+      "distributeDividends",
+      "shareholders",
+      "END_EPOCH",
+      "revenue",
+      "passive-income"
+    ]
+  },
+  {
+    "id": "qpi-ipo-bidding-pattern",
+    "title": "QPI IPO Bidding — qpi.bidInIPO()",
+    "content": "Contracts can participate in IPOs of other contracts using qpi.bidInIPO():\n// Bid on another contract IPO from within a procedure:\nPUBLIC_PROCEDURE(BidOnIPO) {\n    if (qpi.invocationReward() < BID_AMOUNT) {\n        if (qpi.invocationReward() > 0) qpi.transfer(qpi.invocator(), qpi.invocationReward());\n        return;\n    }\n    // Bid on contract at index TARGET_INDEX, price = pricePerShare, quantity = numShares\n    qpi.bidInIPO(TARGET_CONTRACT_INDEX, input.pricePerShare, input.numShares);\n    sint64 excess = qpi.invocationReward() - (input.pricePerShare * input.numShares);\n    if (excess > 0) qpi.transfer(qpi.invocator(), excess);\n}\n// If IPO bid is not filled:\n// - Refund arrives via POST_INCOMING_TRANSFER with TransferType::ipoBidRefund\n// - Use input.sourceId (NOT qpi.invocator()) for the source\n// Cannot call qpi.bidInIPO() from POST_INCOMING_TRANSFER callback.",
+    "source": "contracts.md",
+    "type": "pattern",
+    "tags": [
+      "IPO",
+      "bidInIPO",
+      "shares",
+      "auction",
+      "inter-contract",
+      "pattern"
+    ]
+  },
+  {
+    "id": "qpi-entity-query-pattern",
+    "title": "QPI Entity Queries — getEntity() and numberOfShares()",
+    "content": "Querying on-chain state about addresses and shares:\n// Get entity balance and share info:\nQpiContextFunctionCall::Entity entity = qpi.getEntity(someId);\nuint64 balance = entity.incomingAmount - entity.outgoingAmount;\n// Note: balance = incomingAmount - outgoingAmount (both uint64, never negative)\n\n// Query shares of this contract owned by an address:\n// numberOfShares(assetName, issuer, owner, possessor)\n// Pass NULL_ID for filters you want to ignore\nuint64 shares = qpi.numberOfShares(MYTKN, SELF, targetAddress, NULL_ID);\n\n// Check if address is a computor:\n// Computors own shares in the QUBIC contract\n// Contract index 0 = QUBIC (system contract)\n\n// id type operations:\n// id a = qpi.invocator(); — caller address\n// if (a == NULL_ID) { } — null check\n// Ids are 32-byte public keys, comparable with == and !=",
+    "source": "qubic-core",
+    "type": "reference",
+    "tags": [
+      "getEntity",
+      "numberOfShares",
+      "balance",
+      "id",
+      "query",
+      "entity",
+      "shares"
+    ]
+  },
+  {
+    "id": "qpi-private-procedure-helper",
+    "title": "QPI Private Helper Functions and Procedures",
+    "content": "Use PRIVATE_FUNCTION and PRIVATE_PROCEDURE for internal contract logic:\n// PRIVATE_FUNCTION — read-only helper, NOT callable by other contracts\nPRIVATE_FUNCTION(CalculateFee)\n{\n    output.fee = div(input.amount * FEE_RATE, 10000);  // basis points\n}\n\n// PRIVATE_PROCEDURE — state-modifying helper, NOT callable externally\nPRIVATE_PROCEDURE(InternalTransfer)\n{\n    if (state.balances.get(input.from) < input.amount) return;\n    state.balances.set(input.from, state.balances.get(input.from) - input.amount);\n    state.balances.set(input.to, state.balances.get(input.to) + input.amount);\n}\n\n// Call private helpers from public procedures:\nPUBLIC_PROCEDURE(Transfer) {\n    InternalTransfer_input iInput;\n    InternalTransfer_output iOutput;\n    iInput.from = qpi.invocator();\n    iInput.to = input.recipient;\n    iInput.amount = input.amount;\n    // Private procedures called directly (not via qpi)\n    CALL(InternalTransfer, iInput, iOutput);\n}",
+    "source": "contracts.md",
+    "type": "pattern",
+    "tags": [
+      "private",
+      "helper",
+      "PRIVATE_FUNCTION",
+      "PRIVATE_PROCEDURE",
+      "internal",
+      "modular"
+    ]
+  },
+  {
+    "id": "qpi-saturating-arithmetic",
+    "title": "QPI Safe Arithmetic — Saturating Add/Subtract/Multiply",
+    "content": "QPI has no built-in overflow protection. Use these patterns:\n\n// Saturating add (uint64):\n// Returns min(a + b, MAX_UINT64)\nif (b > 0 && a > 18446744073709551615ULL - b) {\n    // Overflow: cap or reject\n    a = 18446744073709551615ULL;\n} else {\n    a = a + b;\n}\n\n// Safe subtract (unsigned):\nif (b > a) { return; }  // underflow — reject\na = a - b;\n\n// Safe multiply (uint64 x uint32 = uint64):\n// If result would exceed 2^64: use div() to check first\nif (b > 0 && a > div(18446744073709551615ULL, b)) {\n    // Would overflow\n    return;\n}\nuint64 product = a * b;\n\n// Division: always use div(a, b) — returns 0 if b==0\n// Modulo: always use mod(a, b) — returns 0 if b==0\n// Never use / or % operators",
+    "source": "security",
+    "type": "pattern",
+    "tags": [
+      "arithmetic",
+      "overflow",
+      "saturating",
+      "safe-math",
+      "div",
+      "mod",
+      "uint64",
+      "security"
+    ]
+  },
+  {
+    "id": "qpi-governance-voting-pattern",
+    "title": "QPI On-Chain Governance Voting Pattern",
+    "content": "Shareholder governance pattern using share-weighted voting:\nstruct GOVERNANCE : public ContractBase {\n    struct Proposal {\n        uint64 votesFor;\n        uint64 votesAgainst;\n        uint32 deadline;  // tick\n        bit executed;\n    };\n    Array<Proposal, 16> proposals;\n    uint32 proposalCount;\n\n    struct Vote_input { uint32 proposalId; bit support; };\n    struct Vote_output {};\n\n    PUBLIC_PROCEDURE(Vote) {\n        if (qpi.invocationReward() > 0) qpi.transfer(qpi.invocator(), qpi.invocationReward());\n        if (input.proposalId >= state.proposalCount) return;\n        if (qpi.tick() > state.proposals.get(input.proposalId).deadline) return;\n        // Weight vote by share ownership\n        uint64 shares = qpi.numberOfShares(MYTKN, SELF, qpi.invocator(), NULL_ID);\n        if (shares == 0) return;\n        Proposal p = state.proposals.get(input.proposalId);\n        if (input.support) { p.votesFor = p.votesFor + shares; }\n        else { p.votesAgainst = p.votesAgainst + shares; }\n        state.proposals.set(input.proposalId, p);\n    }\n};",
+    "source": "contracts.md",
+    "type": "contract",
+    "tags": [
+      "governance",
+      "voting",
+      "shareholders",
+      "proposal",
+      "on-chain",
+      "pattern",
+      "DAO"
+    ]
+  },
+  {
+    "id": "qpi-collection-usage",
+    "title": "QPI Collection<T,L> — Priority Queue Usage",
+    "content": "Collection<T,L> provides a multi-key priority queue view of data:\n// Declare: Collection<OrderData, 65536> orders;\n// Key type is id (address). Each id can have multiple entries.\n// Ordered by priority (sint64) per id\n\nstruct OrderData { uint64 amount; uint64 price; uint32 tick; };\n\n// Add entry for an address:\nOrderData order;\norder.amount = input.amount;\norder.price = input.price;\norder.tick = qpi.tick();\nstate.orders.add(qpi.invocator(), order, input.price);  // (key, value, priority)\n\n// Get highest priority entry for an address:\nOrderData best = state.orders.get(state.orders.headIndex(qpi.invocator()));\n\n// Remove highest priority entry:\nstate.orders.remove(state.orders.headIndex(qpi.invocator()));\n\n// Iterate all entries for an address:\nuint32 idx = state.orders.headIndex(targetId);\nwhile (idx != NULL_INDEX) {\n    OrderData entry = state.orders.get(idx);\n    idx = state.orders.nextIndex(idx);\n}\n\n// Call cleanup() at END_EPOCH after many removes.\n// NULL_INDEX = (uint32)-1 = 4294967295",
+    "source": "qubic-core",
+    "type": "reference",
+    "tags": [
+      "Collection",
+      "priority-queue",
+      "data-structures",
+      "orders",
+      "headIndex",
+      "pattern"
+    ]
+  },
+  {
+    "id": "qpi-vulnerability-reentrancy",
+    "title": "Vulnerability: Reentrancy in Cross-Contract Calls",
+    "content": "VULNERABILITY: When Contract A calls Contract B via qpi.invokeProcedure(), Contract B can call back into Contract A before the first call finishes.\n\nExample (VULNERABLE):\nPUBLIC_PROCEDURE(Withdraw) {\n    uint64 bal = state.balances.get(qpi.invocator());\n    if (bal == 0) return;\n    qpi.transfer(qpi.invocator(), bal);          // Sends QU\n    // POST_INCOMING_TRANSFER on attacker contract fires here\n    // Attacker calls Withdraw again before this line:\n    state.balances.set(qpi.invocator(), 0);      // balance cleared AFTER transfer\n}\n\nFix — Checks-Effects-Interactions pattern:\nPUBLIC_PROCEDURE(Withdraw) {\n    uint64 bal = state.balances.get(qpi.invocator());\n    if (bal == 0) return;\n    state.balances.set(qpi.invocator(), 0);      // Clear FIRST\n    qpi.transfer(qpi.invocator(), bal);           // Transfer LAST\n}\n\nGeneral rule: Always update state BEFORE external transfers or calls.",
+    "source": "security",
+    "type": "vulnerability",
+    "tags": [
+      "reentrancy",
+      "vulnerability",
+      "cross-contract",
+      "checks-effects-interactions",
+      "security",
+      "withdraw"
+    ]
+  },
+  {
+    "id": "qpi-vulnerability-access-control",
+    "title": "Vulnerability: Missing Access Control in Admin Procedures",
+    "content": "VULNERABILITY: Admin or privileged procedures callable by anyone.\n\nExample (VULNERABLE):\nPUBLIC_PROCEDURE(SetFeeRate) {\n    state.feeRate = input.newRate;  // Anyone can change fee!\n}\n\nFix — restrict to contract owner (set in INITIALIZE):\nINITIALIZE {\n    state.owner = qpi.originator();  // Store deployer address\n}\n\nPUBLIC_PROCEDURE(SetFeeRate) {\n    if (qpi.invocationReward() > 0) qpi.transfer(qpi.invocator(), qpi.invocationReward());\n    if (qpi.invocator() != state.owner) return;  // Access check\n    if (input.newRate > MAX_FEE_RATE) return;     // Bounds check\n    state.feeRate = input.newRate;\n}\n\n// Alternative: restrict to shareholders\nuint64 shares = qpi.numberOfShares(MYTKN, SELF, qpi.invocator(), NULL_ID);\nif (shares == 0) return;\n\n// Note: qpi.originator() = original tx signer (not affected by cross-contract calls)\n// qpi.invocator() = immediate caller (may be a contract in cross-contract scenario)",
+    "source": "security",
+    "type": "vulnerability",
+    "tags": [
+      "access-control",
+      "vulnerability",
+      "owner",
+      "admin",
+      "authorization",
+      "security",
+      "originator"
+    ]
+  },
+  {
+    "id": "qpi-qx-order-book-pattern",
+    "title": "QX Order Book Pattern — Offer/Take/Cancel Flow",
+    "content": "Pattern for exchange-like order books in QPI:\n\n1) Maker posts offer:\nPUBLIC_PROCEDURE(PostOffer) {\n    if (qpi.invocationReward() > 0) qpi.transfer(qpi.invocator(), qpi.invocationReward());\n    // Store offer keyed by owner with priority = price\n    Offer o;\n    o.asset = input.asset;\n    o.amount = input.amount;\n    o.price = input.price;\n    o.tick = qpi.tick();\n    state.offers.add(qpi.invocator(), o, input.price);\n}\n\n2) Taker fills offer:\nPUBLIC_PROCEDURE(TakeOffer) {\n    uint32 idx = state.offers.headIndex(input.maker);\n    if (idx == NULL_INDEX) return;\n    Offer o = state.offers.get(idx);\n    // Validate amount/price and transfer assets/QU via qpi.transfer* APIs\n    state.offers.remove(idx);\n}\n\n3) Maker cancels offer:\nPUBLIC_PROCEDURE(CancelOffer) {\n    uint32 idx = state.offers.headIndex(qpi.invocator());\n    if (idx != NULL_INDEX) state.offers.remove(idx);\n}\n\nUse cleanup()/cleanupIfNeeded() after heavy removals.",
+    "source": "qubic-core",
+    "type": "pattern",
+    "tags": [
+      "QX",
+      "order-book",
+      "exchange",
+      "offers",
+      "Collection",
+      "pattern"
+    ]
+  },
+  {
+    "id": "qpi-contract-index-call-rules",
+    "title": "Cross-Contract Direction Rule — Only Lower/Equal Index Calls",
+    "content": "Qubic enforces directional call ordering to avoid cyclic dependency issues.\n\nRule of thumb:\n- A contract may call functions/procedures in contracts with lower (or same, for self) index only.\n- Calling higher-index contracts is invalid and can fail verification/execution.\n\nSafe pattern:\nif (TARGET_CONTRACT_INDEX > SELF_INDEX) {\n    // reject or defer\n    return;\n}\nqpi.callFunction(TARGET_CONTRACT_INDEX, fnInput, fnOutput);\n\nDesign guidance:\n- Put shared utility/oracle contracts at low indexes.\n- Higher-index application contracts should depend downward.\n- Avoid circular architecture between sibling contracts.",
+    "source": "contracts.md",
+    "type": "reference",
+    "tags": [
+      "cross-contract",
+      "contract-index",
+      "call-order",
+      "architecture",
+      "safety"
+    ]
+  },
+  {
+    "id": "qpi-inputsize-validation-pattern",
+    "title": "Input Size Validation Pattern (RPC/ABI Safety)",
+    "content": "When building external tooling and transaction payloads, ensure inputSize exactly matches the input struct size.\n\nWhy it matters:\n- Mismatched sizes can corrupt decoding assumptions.\n- May cause rejected calls or unsafe behavior in wrappers.\n\nFrontend/tooling pattern:\nconst expected = SIZEOF_MY_INPUT;\nif (payload.inputSize !== expected) {\n  throw new Error('Invalid input size for inputType');\n}\n\nContract-side defensive pattern:\n- Keep structs minimal and explicit.\n- Do not reuse inputType IDs with incompatible struct layouts over upgrades.\n- Version input structs if shape changes are required.",
+    "source": "security",
+    "type": "pattern",
+    "tags": [
+      "inputSize",
+      "ABI",
+      "validation",
+      "rpc",
+      "security"
+    ]
+  },
+  {
+    "id": "qpi-state-versioning-migration",
+    "title": "State Schema Versioning Pattern",
+    "content": "Qubic contracts are effectively immutable once live; schema changes must be planned.\n\nPattern:\nstruct MYCONTRACT : public ContractBase {\n    uint32 schemaVersion;\n    // existing fields...\n\n    INITIALIZE {\n        state.schemaVersion = 1;\n    }\n\n    PUBLIC_FUNCTION(GetVersion) {\n        output.version = state.schemaVersion;\n    }\n};\n\nUpgrade strategy:\n1) Deploy V2 contract with explicit migration procedure.\n2) Snapshot/port state via controlled calls.\n3) Freeze legacy write paths and mark read-only.\n\nNever silently reinterpret old state layouts.",
+    "source": "contracts.md",
+    "type": "pattern",
+    "tags": [
+      "state",
+      "schema",
+      "migration",
+      "versioning",
+      "upgrade"
+    ]
+  },
+  {
+    "id": "qpi-mainnet-readiness-checklist",
+    "title": "Mainnet Readiness Checklist for QPI Contracts",
+    "content": "Pre-mainnet checklist:\n- Invocation reward paths tested (refund/accept/burn).\n- PUBLIC_FUNCTION has no state mutation or transfer calls.\n- REGISTER_USER_FUNCTIONS_AND_PROCEDURES is complete and index-safe.\n- Overflow/underflow guards on balance/accounting math.\n- END_EPOCH cleanup for HashMap/HashSet/Collection fragmentation.\n- Cross-contract call direction validated by index constraints.\n- Oracle/time assumptions reviewed against tick latency.\n- QU reserve burn model reviewed under peak load.\n- Adversarial scenarios tested (reentrancy-like callbacks, malformed input payloads).\n- Proposal docs + test evidence prepared for computor review.",
+    "source": "security",
+    "type": "reference",
+    "tags": [
+      "mainnet",
+      "checklist",
+      "audit",
+      "deployment",
+      "security"
+    ]
+  },
+  {
+    "id": "qpi-event-logging-guidance",
+    "title": "Event Logging Guidance (Procedure-Only)",
+    "content": "Logging/emit-style side effects are allowed only in state-mutating execution paths.\n\nRules:\n- PUBLIC_FUNCTION must remain pure/read-only.\n- Emit/log in PUBLIC_PROCEDURE or lifecycle hooks where deterministic output is preserved.\n- Include stable, fixed-size fields in emitted data for easier decoding.\n\nPattern:\nPUBLIC_PROCEDURE(DoAction) {\n    // update state\n    // emit deterministic event payload (tooling decodes off-chain)\n}\n\nAvoid building business logic that depends on off-chain event delivery.",
+    "source": "qubic-docs",
+    "type": "reference",
+    "tags": [
+      "events",
+      "logging",
+      "PUBLIC_PROCEDURE",
+      "determinism",
+      "tooling"
+    ]
+  },
+  {
+    "id": "qpi-tick-time-patterns",
+    "title": "Tick-Time Patterns and Time-Based Logic",
+    "content": "Use qpi.tick() for deterministic time windows.\n\nExamples:\n- Cooldown: if (qpi.tick() < state.lastActionTick + COOLDOWN_TICKS) return;\n- Expiry: if (qpi.tick() > order.expiryTick) cancel order;\n- Voting deadlines: proposal.deadline = qpi.tick() + VOTING_TICKS;\n\nGuidance:\n- Never use wall-clock time in contract logic.\n- Keep windows large enough for network latency and user UX.\n- Validate additions for overflow when using very large constants.",
+    "source": "qubic-core",
+    "type": "pattern",
+    "tags": [
+      "tick",
+      "time",
+      "deadline",
+      "cooldown",
+      "deterministic"
+    ]
+  },
+  {
+    "id": "qpi-oracle-subscription-pattern",
+    "title": "Oracle Subscription Pattern (Periodic Updates)",
+    "content": "For recurring oracle-fed contracts, model subscriptions explicitly:\n\nState:\n- target pair / feed id\n- refreshIntervalTicks\n- nextRefreshTick\n- latest value + source tick\n\nFlow:\n1) At/after nextRefreshTick, request or accept oracle update.\n2) Validate denominator != 0 and staleness bounds.\n3) Persist value and set nextRefreshTick = qpi.tick() + interval.\n\nSecurity checks:\n- Reject stale data beyond max age.\n- Handle missing responses gracefully.\n- Keep fallback behavior explicit (pause, hold last value, or safe default).",
+    "source": "qubic-docs",
+    "type": "pattern",
+    "tags": [
+      "oracle",
+      "subscription",
+      "price-feed",
+      "staleness",
+      "pattern"
+    ]
+  },
+  {
+    "id": "qpi-qu-burn-budgeting",
+    "title": "QU Burn Budgeting and Reserve Lifetime Estimation",
+    "content": "Execution consumes QU from contract reserve. Estimate runway before launch.\n\nSimple estimator:\nreserveQU = current reserve\navgBurnPerCall = measured burn\ncallsPerTick = expected load\n\nburnPerTick = avgBurnPerCall * callsPerTick\nrunwayTicks = burnPerTick > 0 ? div(reserveQU, burnPerTick) : 0\n\nOperational guidance:\n- Keep emergency guardrails in expensive procedures.\n- Expose reserve + burn metrics via PUBLIC_FUNCTION for monitoring.\n- Revisit fee policy if runway under realistic peak load is too short.",
+    "source": "qubic-docs",
+    "type": "reference",
+    "tags": [
+      "QU",
+      "burn",
+      "economics",
+      "reserve",
+      "capacity-planning"
+    ]
+  },
+  {
+    "id": "qpi-smart-contract-lifecycle",
+    "title": "Smart Contract Lifecycle: From Code to Mainnet",
+    "content": "Full lifecycle: 1) Research & Planning (study QX, Quottery, QEARN, QVault), 2) Learn QPI guidelines and restrictions, 3) Code contract (.h file in src/contracts/), 4) Unit testing with GoogleTest, 5) Local testnet (Core Lite recommended), 6) SC Verification Tool (qubic-contract-verify), 7) Security audit (recommended), 8) Create PR to qubic/core develop branch, 9) Core dev review, 10) Computor proposal via GQMPROP (epoch N), 11) Voting phase (451 of 676 computors must participate, majority approval), 12) IPO Dutch Auction (epoch N+1, all 676 shares must sell or contract is permanently broken), 13) Contract goes live (epoch N+2). Timeline: Development weeks-months, Verification 1-2 weeks, PR review 1-3 weeks, Proposal+Voting ~7 days, IPO ~7 days. Post-launch: bug fixes via regular PR, new features require new proposal. Contract must burn QU to stay active.",
+    "source": "qubic-docs",
+    "type": "reference",
+    "tags": [
+      "lifecycle",
+      "deployment",
+      "IPO",
+      "voting",
+      "computor",
+      "proposal",
+      "mainnet"
+    ]
+  },
+  {
+    "id": "qpi-contract-registration",
+    "title": "Adding and Registering a Contract in contract_def.h",
+    "content": "To register a contract in contract_def.h:\n\n1. Define CONTRACT_INDEX and STATE (before '// new contracts should be added above this line'):\n#undef CONTRACT_INDEX\n#undef CONTRACT_STATE_TYPE\n#undef CONTRACT_STATE2_TYPE\n#define MYTEST_CONTRACT_INDEX 13\n#define CONTRACT_INDEX MYTEST_CONTRACT_INDEX\n#define CONTRACT_STATE_TYPE MYTEST\n#define CONTRACT_STATE2_TYPE MYTEST2\n#include \"contracts/MyTest.h\"\n\n2. Add contract description:\n{\"MYTEST\", 999, 10000, sizeof(MYTEST)},\n// Format: {\"ASSET_NAME\", CONSTRUCTION_EPOCH, DESTRUCTION_EPOCH, SIZE_OF_STATE}\n// Asset name: max 7 uppercase letters/digits\n\n3. Register in initializeContracts():\nREGISTER_CONTRACT_FUNCTIONS_AND_PROCEDURES(MYTEST);\n\nNaming: Long name for filename (MyTest.h), short name max 7 chars for asset (MYTEST), state struct full uppercase (MYTEST).",
+    "source": "qubic-core",
+    "type": "reference",
+    "tags": [
+      "registration",
+      "contract_def",
+      "index",
+      "asset-name",
+      "setup"
+    ]
+  },
+  {
+    "id": "qpi-googletest-patterns",
+    "title": "GoogleTest Testing Patterns for QPI Contracts",
+    "content": "#define NO_UEFI\n#include \"contract_testing.h\"\n\nclass ContractTestingMyTest : protected ContractTesting\n{\npublic:\n    ContractTestingMyTest()\n    {\n        initEmptySpectrum();\n        initEmptyUniverse();\n        INIT_CONTRACT(MYTEST);\n    }\n\n    MYTEST::add_output add(sint64 a, sint64 b)\n    {\n        MYTEST::add_input input;\n        MYTEST::add_output output;\n        input.a = a;\n        input.b = b;\n        callFunction(MYTEST_CONTRACT_INDEX, 1, input, output);\n        return output;\n    }\n};\n\nTEST(MyTest, TestAdd) {\n    ContractTestingMyTest test;\n    MYTEST::add_output output = test.add(1, 2);\n    EXPECT_EQ(output.out, 3);\n}\n\nTest file naming: contract_[lowercase_name].cpp\nUse callFunction() for functions, invokeProcedure() for procedures.\nIf testing cross-contract calls, INIT_CONTRACT() both contracts.\nRun with --gtest_filter=MyTest.* to execute only your tests.",
+    "source": "qubic-core",
+    "type": "reference",
+    "tags": [
+      "testing",
+      "googletest",
+      "unit-test",
+      "callFunction",
+      "invokeProcedure"
+    ]
+  },
+  {
+    "id": "qpi-cli-interaction",
+    "title": "Qubic CLI: Calling Functions and Invoking Procedures",
+    "content": "Qubic CLI (github.com/qubic/qubic-cli) for interacting with core node.\n\nCall contract function (immediate, read-only):\nqubic-cli -nodeip <IP> -nodeport <PORT> -sendrawpacket <HEX> <SIZE>\nResponse starts from byte 8. Decode hex to output struct.\n\nInvoke contract procedure (creates transaction, scheduled at tick):\nqubic-cli -seed <SEED> -nodeip <IP> -nodeport <PORT> -sendcustomtransaction <CONTRACT_ID> <PROCEDURE_ID> <AMOUNT> <INPUT_SIZE> <INPUT_HEX>\n\nKey difference:\n- Function calls: TCP connection, immediate response\n- Procedure calls: transaction sent, executed when network reaches the tick\n\nGet contract identity:\nid contract(CONTRACT_INDEX, 0, 0, 0);\nCHAR16* contractAddress = new CHAR16[61];\ngetIdentity(contract.m256i_u8, contractAddress, false);\n\nCannot reuse same dejavu (input hex) twice. Regenerate for each call.\nMust use seed with balance for procedure invocation.",
+    "source": "qubic-docs",
+    "type": "reference",
+    "tags": [
+      "CLI",
+      "qubic-cli",
+      "function-call",
+      "procedure-invoke",
+      "transaction",
+      "RPC"
+    ]
+  },
+  {
+    "id": "qpi-cross-contract-calls",
+    "title": "Cross-Contract Calls: CALL_OTHER_CONTRACT and INVOKE_OTHER_CONTRACT",
+    "content": "Cross-contract communication macros:\n\nCALL_OTHER_CONTRACT_FUNCTION(contractStateType, function, input, output)\nINVOKE_OTHER_CONTRACT_PROCEDURE(contractStateType, procedure, input, output, invocationReward)\n\nRules:\n- Function -> Function: ALLOWED\n- Procedure -> Procedure: ALLOWED\n- Procedure -> Function: ALLOWED\n- Function -> Procedure: FORBIDDEN (functions cannot modify state)\n- Called contract must have LOWER contract index\n- Define cross-contract input/output in locals struct\n- Your contract pays invocationReward QU if the invoked contract consumes it\n\nExample:\nstruct crossCall_locals\n{\n    CROSS::setCrossStateNumber_input crossInput;\n    CROSS::setCrossStateNumber_output crossOutput;\n};\n\nPUBLIC_PROCEDURE_WITH_LOCALS(crossCall)\n{\n    locals.crossInput.crossStateNumber = input.value;\n    INVOKE_OTHER_CONTRACT_PROCEDURE(CROSS, setCrossStateNumber, locals.crossInput, locals.crossOutput, qpi.invocationReward());\n}\n\nInner-contract calls use CALL(functionOrProcedure, input, output) macro.",
+    "source": "contracts.md",
+    "type": "pattern",
+    "tags": [
+      "cross-contract",
+      "CALL_OTHER_CONTRACT",
+      "INVOKE_OTHER_CONTRACT",
+      "inter-contract",
+      "composition"
+    ]
+  },
+  {
+    "id": "qpi-assets-shares-management",
+    "title": "Asset Issuance, Share Transfer, and Management Rights",
+    "content": "Asset issuance:\nqpi.issueAsset(assetName, issuer, decimalPlaces, numberOfShares, unitOfMeasurement)\n- assetName: up to 7 uppercase A-Z chars encoded as uint64\n- issuer must match caller\n- Returns number of shares issued or negative on error\n\nShare transfer (atomic ownership + possession):\nqpi.transferShareOwnershipAndPossession(assetName, issuer, owner, possessor, numberOfShares, newOwnerAndPossessor)\n- Use NULL_ID as newOwnerAndPossessor to burn shares\n\nManagement rights transfer:\nqpi.releaseShares() - contract A sends rights to contract B\nqpi.acquireShares() - contract B requests rights from contract A\n\nPRE_ACQUIRE_SHARES / PRE_RELEASE_SHARES: validate fee and allowTransfer\nPOST_ACQUIRE_SHARES / POST_RELEASE_SHARES: post-transfer hooks\n\n676 contract shares created after successful IPO.\nExecution fee reserve: finalPrice * 676 from IPO proceeds.\nReplenish via qpi.burn() or QUtil's BurnQubicForContract.",
+    "source": "contracts.md",
+    "type": "reference",
+    "tags": [
+      "assets",
+      "shares",
+      "issueAsset",
+      "transferShares",
+      "releaseShares",
+      "acquireShares",
+      "IPO"
+    ]
+  },
+  {
+    "id": "qpi-qns-reference",
+    "title": "Qubic Name Service (QNS) Contract Reference",
+    "content": "QNS: decentralized naming system mapping human-readable names to Qubic addresses.\n\nData structures:\n- UEFIString<LENGTH>: fixed-length validated string (max 32 chars, alphanumeric)\n- Domain: subDomain + rootDomain + tld (.qubic or .qns)\n- RegistryRecord: owner, registerDate, registerEpoch, registrationYears\n- ResolveData: address (id) + text (UEFIString)\n\nStorage: HashMap for registry and nested HashMap for resolve data.\n\nProcedures:\n- RegisterDomain: 2M QU/year, validates name and TLD\n- RenewDomain: extends registration\n- TransferDomain: 100 QU fee, changes owner\n- SetResolveAddressData: maps domain to Qubic address (owner only)\n\nFunctions:\n- GetResolveAddressData: returns mapped address\n\nSystem hooks:\n- INITIALIZE: sets up .qubic and .qns TLDs\n- BEGIN_EPOCH: processes domain expirations, cleans stale data\n\nNote: This is a reference implementation, not the production QNS.",
+    "source": "qubic-docs",
+    "type": "contract",
+    "tags": [
+      "QNS",
+      "naming",
+      "domain",
+      "DNS",
+      "registration",
+      "resolve"
+    ]
+  },
+  {
+    "id": "qpi-official-mytest-add-contract",
+    "title": "Official MyTest Add Contract (from docs.qubic.org Getting Started)",
+    "content": "using namespace QPI;\n\nstruct MYTEST2\n{\n};\n\nstruct MYTEST : public ContractBase\n{\npublic:\n    struct add_input\n    {\n        sint64 a;\n        sint64 b;\n    };\n\n    struct add_output\n    {\n        sint64 out;\n    };\n\n    PUBLIC_FUNCTION(add)\n    {\n        output.out = input.a + input.b;\n    }\n\n    REGISTER_USER_FUNCTIONS_AND_PROCEDURES()\n    {\n        REGISTER_USER_FUNCTION(add, 1);\n    }\n};\n\n// Registration in contract_def.h:\n// #define MYTEST_CONTRACT_INDEX 13\n// #define CONTRACT_INDEX MYTEST_CONTRACT_INDEX\n// #define CONTRACT_STATE_TYPE MYTEST\n// #define CONTRACT_STATE2_TYPE MYTEST2\n// #include \"contracts/MyTest.h\"\n//\n// Description: {\"MYTEST\", 999, 10000, sizeof(MYTEST)}\n// Register: REGISTER_CONTRACT_FUNCTIONS_AND_PROCEDURES(MYTEST);",
+    "source": "qubic-docs",
+    "type": "contract",
+    "tags": ["mytest", "add", "function", "getting-started", "official", "registration", "contract_def"]
+  },
+  {
+    "id": "qpi-official-cross-contract-example",
+    "title": "Official CROSS Contract with Cross-Contract Procedure Invocation",
+    "content": "#pragma once\nusing namespace QPI;\n\nstruct CROSS2\n{\n};\n\nstruct CROSS : public ContractBase\n{\npublic:\n    sint64 crossStateNumber;\n\n    struct setCrossStateNumber_input\n    {\n        sint64 crossStateNumber;\n    };\n    struct setCrossStateNumber_output\n    {\n    };\n\n    PUBLIC_PROCEDURE(setCrossStateNumber)\n    {\n        state.crossStateNumber = input.crossStateNumber;\n    }\n\n    struct getCrossStateNumber_input\n    {\n    };\n    struct getCrossStateNumber_output\n    {\n        sint64 crossStateNumber;\n    };\n\n    PUBLIC_FUNCTION(getCrossStateNumber)\n    {\n        output.crossStateNumber = state.crossStateNumber;\n    }\n\n    REGISTER_USER_FUNCTIONS_AND_PROCEDURES()\n    {\n        REGISTER_USER_PROCEDURE(setCrossStateNumber, 1);\n        REGISTER_USER_FUNCTION(getCrossStateNumber, 1);\n    }\n};\n\n// Calling from MyTest (higher index):\n// struct crossCall_locals\n// {\n//     CROSS::setCrossStateNumber_input crossInput;\n//     CROSS::setCrossStateNumber_output crossOutput;\n//     CROSS::getCrossStateNumber_input crossGetInput;\n//     CROSS::getCrossStateNumber_output crossGetOutput;\n// };\n// PUBLIC_PROCEDURE_WITH_LOCALS(crossCall)\n// {\n//     locals.crossInput.crossStateNumber = input.value;\n//     INVOKE_OTHER_CONTRACT_PROCEDURE(CROSS, setCrossStateNumber, locals.crossInput, locals.crossOutput, qpi.invocationReward());\n//     CALL_OTHER_CONTRACT_FUNCTION(CROSS, getCrossStateNumber, locals.crossGetInput, locals.crossGetOutput);\n// }",
+    "source": "qubic-docs",
+    "type": "contract",
+    "tags": ["cross-contract", "INVOKE_OTHER_CONTRACT", "CALL_OTHER_CONTRACT", "procedure", "function", "official"]
+  },
+  {
+    "id": "qpi-official-asset-issuance-contract",
+    "title": "Official Asset Issuance and Share Release Contract (MYTEST + CROSS)",
+    "content": "// MYTEST contract for issuing and managing asset shares\nstruct issueAsset_input {\n    uint64 name;                   // Asset identifier (up to 7 uppercase chars encoded)\n    id issuer;                     // Creator's Qubic ID\n    sint8 decimalPlaces;           // Precision (e.g., 8 for BTC-like)\n    sint64 numberOfShares;         // Initial supply\n    uint64 unitOfMeasurement;      // Measurement standard\n};\nstruct issueAsset_output { bit success; };\n\n// releaseShares transfers shares between contracts\nstruct releaseShares_input {\n    Asset asset;                   // Asset to transfer\n    id owner;                      // Current owner\n    id possessor;                  // Current holder\n    sint64 numberOfShares;         // Amount to release\n    uint16 destOwnershipContract;  // Receiving contract\n    uint16 destPossessionContract;\n    sint64 offeredFee;             // Must match fixed fee\n};\nstruct releaseShares_output { bit success; };\n\n// PRE_RELEASE_SHARES validates the fee (100 QU)\nPRE_RELEASE_SHARES()\n{\n    if (input.offeredFee < 100)\n    {\n        output.allowTransfer = false;\n        return;\n    }\n    output.allowTransfer = true;\n    output.requestedFee = 100;\n}\n\n// Interaction flow:\n// 1. MYTEST calls releaseShares\n// 2. CROSS's PRE_ACQUIRE_SHARES validates fee\n// 3. Qubic SC executes atomic transfer\n// 4. Both contracts update states",
+    "source": "contracts.md",
+    "type": "contract",
+    "tags": ["assets", "shares", "issueAsset", "releaseShares", "PRE_RELEASE_SHARES", "fee", "transfer", "official"]
+  },
+  {
+    "id": "qpi-official-inner-contract-call",
+    "title": "Official Inner-Contract Call Pattern (Square + SumSquare)",
+    "content": "// Inner-contract calls use CALL(functionOrProcedure, input, output)\n\nstruct square_input\n{\n    sint64 a;\n};\nstruct square_output\n{\n    sint64 out;\n};\n\nPRIVATE_FUNCTION(square)\n{\n    output.out = input.a * input.a;\n}\n\nstruct sumSquareOneToTen_input\n{\n};\nstruct sumSquareOneToTen_output\n{\n    sint64 sum;\n};\nstruct sumSquareOneToTen_locals\n{\n    sint64 i;\n    square_input squareInput;\n    square_output squareOutput;\n};\n\nPUBLIC_FUNCTION_WITH_LOCALS(sumSquareOneToTen)\n{\n    for (locals.i = 1; locals.i <= 10; ++locals.i)\n    {\n        output.sum += locals.i;\n    }\n    locals.squareInput.a = output.sum;\n    CALL(square, locals.squareInput, locals.squareOutput);\n    output.sum = locals.squareOutput.out;\n}\n\n// Key rules:\n// - Define input/output for inner call in _locals struct\n// - Use PRIVATE_FUNCTION/PRIVATE_PROCEDURE for internal-only helpers\n// - CALL() macro for same-contract calls\n// - CALL_OTHER_CONTRACT_FUNCTION() for cross-contract",
+    "source": "qubic-docs",
+    "type": "pattern",
+    "tags": ["CALL", "inner-contract", "locals", "PRIVATE_FUNCTION", "WITH_LOCALS", "pattern", "official"]
+  },
+  {
+    "id": "qpi-official-state-modification",
+    "title": "Official State Modification Pattern (changeNumber)",
+    "content": "// State is persistent data — member variables in the contract struct.\n// It must remain identical across all nodes for consensus.\n// The state is passed as a reference named 'state'.\n\nstruct MYTEST : public ContractBase\n{\npublic:\n    sint64 myNumber;\n\n    struct changeNumber_input\n    {\n        sint64 myNumber;\n    };\n    struct changeNumber_output\n    {\n    };\n\n    // CORRECT: procedure can modify state\n    PUBLIC_PROCEDURE(changeNumber)\n    {\n        state.myNumber = input.myNumber;\n    }\n\n    // WRONG: function CANNOT modify state\n    // PUBLIC_FUNCTION(changeNumber)\n    // {\n    //     state.myNumber = input.myNumber; // ERROR: expression must be a modifiable lvalue\n    // }\n\n    struct getNumber_input {};\n    struct getNumber_output { sint64 myNumber; };\n\n    PUBLIC_FUNCTION(getNumber)\n    {\n        output.myNumber = state.myNumber;\n    }\n\n    REGISTER_USER_FUNCTIONS_AND_PROCEDURES()\n    {\n        REGISTER_USER_PROCEDURE(changeNumber, 1);\n        REGISTER_USER_FUNCTION(getNumber, 1);\n    }\n\n    INITIALIZE()\n    {\n        state.myNumber = 0;\n    }\n};\n\n// Maximum contract state size: 1 GiB",
+    "source": "qubic-docs",
+    "type": "pattern",
+    "tags": ["state", "procedure", "function", "INITIALIZE", "read-only", "modification", "official"]
+  },
+  {
+    "id": "qpi-official-googletest-full-flow",
+    "title": "Official GoogleTest Testing Flow (from docs.qubic.org)",
+    "content": "#define NO_UEFI\n#include \"contract_testing.h\"\n\nclass ContractTestingMyTest : protected ContractTesting\n{\npublic:\n    ContractTestingMyTest()\n    {\n        initEmptySpectrum();\n        initEmptyUniverse();\n        INIT_CONTRACT(MYTEST);\n    }\n\n    MYTEST::add_output add(sint64 a, sint64 b)\n    {\n        MYTEST::add_input input;\n        MYTEST::add_output output;\n        input.a = a;\n        input.b = b;\n        callFunction(MYTEST_CONTRACT_INDEX, 1, input, output);\n        return output;\n    }\n};\n\nTEST(MyTest, TestAdd) {\n    ContractTestingMyTest test;\n    MYTEST::add_output output = test.add(1, 2);\n    EXPECT_EQ(output.out, 3);\n}\n\n// Test file naming: contract_[lowercase_name].cpp\n// Use callFunction() for functions, invokeProcedure() for procedures\n// If testing cross-contract: INIT_CONTRACT() both contracts\n// Run with --gtest_filter=MyTest.* for only your tests\n// Build with Visual Studio, right-click test project -> Build\n// Execute: C:\\path\\to\\x64\\Debug\\test.exe --gtest_filter=MyTest.*",
+    "source": "qubic-core",
+    "type": "reference",
+    "tags": ["testing", "googletest", "unit-test", "callFunction", "INIT_CONTRACT", "official", "build"]
+  },
+  {
+    "id": "qpi-style-guide-conventions",
+    "title": "QPI Style Guide and Coding Conventions",
+    "content": "Naming conventions:\n- Functions/procedures: camelCase (e.g., getStateNumber, setPrice)\n- Constants: ALL_CAPS prefixed with contract name (e.g., MYTEST_FEE = 1000)\n- State struct: full uppercase (e.g., MYTEST)\n- Asset name: max 7 uppercase A-Z/0-9 (e.g., QX, QTRY, QEARN)\n\nCurly braces always on new line:\nif (cond)\n{\n    // ...\n}\nelse\n{\n    // ...\n}\n\nUser-defined types: declared INSIDE contract struct to avoid name conflicts.\nConstants: use constexpr (e.g., constexpr sint64 MYTEST_FEE = 1000)\nErrors: declare as enum ContractNameError { ERROR_1 = 1, ERROR_2, ... }\nSELF: contract id (public key), equivalent to id(CONTRACT_INDEX, 0, 0, 0)\nSELF_INDEX: contract index number\nString: prohibited. Use custom string implementation (UEFIString pattern).\nInitialization: always initialize all state in INITIALIZE() procedure.\nState is implicitly zero-initialized but explicit init is best practice.",
+    "source": "qubic-docs",
+    "type": "reference",
+    "tags": [
+      "style",
+      "naming",
+      "conventions",
+      "camelCase",
+      "constants",
+      "formatting"
+    ]
+  }
+]
