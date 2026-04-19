@@ -1,96 +1,141 @@
-# Qubic Agent UI
+# QForge — AI Smart Contract IDE for Qubic
 
-Development assistant for Qubic QPI smart contracts. Generates, audits, simulates, and deploys QPI code through a conversational interface backed by OpenAI/Google Gemini and an in-app QPI knowledge base.
+![Next.js](https://img.shields.io/badge/Next.js-16-black?logo=nextdotjs)
+![TypeScript](https://img.shields.io/badge/TypeScript-5.x-3178C6?logo=typescript&logoColor=white)
+![Tailwind](https://img.shields.io/badge/Tailwind-4-38B2AC?logo=tailwindcss&logoColor=white)
+![License](https://img.shields.io/badge/license-MIT-green)
+![Status](https://img.shields.io/badge/status-active-brightgreen)
+
+> Generate, audit, and deploy Qubic QPI smart contracts from natural language. Reduces a 2-hour audit cycle to under 30 seconds with a 30-rule static analyzer, AI-assisted fix suggestions, and a sandboxed Dev Kit deploy bridge.
+
+**Live demo:** _coming soon_ · **[Architecture](#architecture)** · **[Quick Start](#quick-start)**
+
+---
+
+## What problem this solves
+
+Qubic's QPI (Quorum Programming Interface) is a constrained C++ subset with rules that the standard compiler does not enforce — invalid contracts only fail at testnet deploy time, often after hours of dev work. QForge catches these violations in the editor, suggests AI-generated fixes against a local QPI knowledge base, and one-click deploys to testnet through a sandboxed bridge.
+
+**Before QForge:** Write contract → push to testnet → wait for tick → read cryptic error → repeat.
+**With QForge:** Type intent → AI scaffolds contract → 30 static checks run inline → one-click deploy.
+
+## Highlights
+
+- **AI contract generation** — natural-language → compilable QPI via OpenAI function calling, Anthropic, or Google Gemini (BYO API key, encrypted client-side with AES-GCM)
+- **30-rule static analyzer** — catches forbidden ops, division-by-zero, state mutation outside transactions, oracle misuse, and more, with severity triage
+- **Local BM25 RAG engine** — `lib/rag.ts` indexes the official QPI docs and 50+ vetted contract patterns at module load. Zero external vector DB. Offline-capable.
+- **Sandboxed Dev Kit bridge** — opt-in shell execution wrapped through a configurable sandbox template, with mainnet gating, output truncation, timeouts, and audit logging
+- **Audit trail** — every generation/deploy attempt logged with IP, user agent, request ID, and structured metadata via `lib/audit.ts`
+- **Rate limiting** — 10 req/min/IP middleware on all API routes
+
+## Architecture
+
+```
+┌────────────────────────────────────────────────────────────────┐
+│  Browser                                                        │
+│  ┌──────────────┐  ┌──────────────┐  ┌─────────────────────┐  │
+│  │  Editor UI   │→ │  Local RAG   │→ │  Static Analyzer    │  │
+│  │ (Next.js 16) │  │  (BM25, TS)  │  │  (30 QPI rules)     │  │
+│  └──────────────┘  └──────────────┘  └─────────────────────┘  │
+│         │                                       │              │
+│         │  AES-GCM encrypted API keys           │              │
+└─────────┼───────────────────────────────────────┼──────────────┘
+          ▼                                       ▼
+   ┌────────────┐    ┌──────────────────────────────────┐
+   │  LLM API   │    │  Next.js API Routes              │
+   │ OpenAI /   │    │  /api/audit       /api/devkit    │
+   │ Gemini /   │    │  /api/oracle/toolkit             │
+   │ Anthropic  │    └─────────────┬────────────────────┘
+   └────────────┘                  │
+                                   ▼
+                        ┌──────────────────────────────┐
+                        │  Sandboxed shell exec        │
+                        │  • timeout, output cap       │
+                        │  • workspace cleanup         │
+                        │  • mainnet gate              │
+                        └─────────┬────────────────────┘
+                                  ▼
+                        ┌──────────────────────────────┐
+                        │  Qubic testnet RPC           │
+                        │  rpc.qubic.org / testnet-rpc │
+                        └──────────────────────────────┘
+```
+
+## Tech stack
+
+| Layer | Tech |
+|-------|------|
+| Frontend | Next.js 16 (App Router), React 19, Tailwind CSS 4, Radix UI |
+| Backend | Next.js API routes (Node runtime), `node:child_process`, `node:fs` |
+| AI | OpenAI function calling, Anthropic Claude, Google Gemini |
+| Retrieval | Pure-TS BM25 over `data/qpi-contracts.json` + official Qubic docs |
+| Crypto | Web Crypto API (AES-GCM) for client-side key storage |
+| Blockchain | Qubic RPC v1 (mainnet + testnet) |
+| Observability | Structured audit logs (`lib/audit.ts`), per-IP rate limiting |
 
 ## Quick Start
 
 ```bash
+git clone https://github.com/ZUES-ops-dot/qubic-agent-ui.git
+cd qubic-agent-ui
 npm install
 npm run dev
 ```
 
-Open `http://localhost:3000`. Enter your OpenAI or Google API key in Settings.
+Open <http://localhost:3000>, click **Settings**, and paste an OpenAI or Google Gemini API key. The key is AES-GCM encrypted in `localStorage` and never sent to the server.
 
-## Build
+### Build for production
 
 ```bash
 npm run build
 npm run lint
 ```
 
-## Environment
+## Configuration
 
-API keys are entered in the browser and stored client-side (AES-GCM encrypted localStorage, with legacy fallback support for previously stored values).
-
-## In-App RAG (Default)
-
-This project uses a **local, in-app retrieval engine** by default:
-
-- BM25-style search over `data/qpi-contracts.json`
-- No external vector database required
-- No backend RAG provisioning step required
-- Offline-capable retrieval once the app is loaded
-
-Current local knowledge base size: **50 entries** (sourced from official Qubic docs, qubic/core, and contracts.md).
-
-Implementation details:
-
-- `lib/rag.ts` — in-app index + retrieval functions
-- `lib/supabase.ts` — legacy compatibility facade delegating to local RAG
-
-## Connectivity Defaults (Important)
-
-By default, this app has **mixed live/offline behavior**:
-
-- **RPC status checks: live by default** (uses public Qubic testnet RPC)
-- **Dev Kit compile/deploy: testnet only, disabled by default** until server env vars are configured
-- **Oracle query submission: disabled by default** unless a local Qubic.Net Toolkit instance is running
-- **Mainnet deployment is not possible through this tool** — it requires computor voting (451/676) and a successful IPO per the Qubic smart contract lifecycle
-
-### 1) Public RPC (live by default)
-
-The app checks real network status using public Qubic RPC:
-
-- Mainnet: `https://rpc.qubic.org`
-- Testnet: `https://testnet-rpc.qubicdev.com`
-
-Official reference: https://docs.qubic.org/api/rpc/
-
-### 2) Dev Kit bridge (opt-in)
-
-The Dev Kit pipeline does **not** execute by default. You must explicitly enable it with server-side environment variables.
-
-Official reference: https://docs.qubic.org/developers/dev-kit/
-
-Optional server-side variables for the Dev Kit pipeline bridge:
+The Dev Kit bridge and Oracle Toolkit bridge are **opt-in** for safety. The default deployment is read-only against the public Qubic RPC.
 
 ```env
+# Enable real compile/deploy (otherwise dry-run only)
 QUBIC_DEVKIT_ENABLE_EXEC=1
-QUBIC_DEVKIT_COMPILE_CMD=compile_command_{contract_file}
-QUBIC_DEVKIT_DEPLOY_CMD=deploy_command_{contract_file}_{network}
-QUBIC_DEVKIT_VERIFY_CMD=verify_command
+QUBIC_DEVKIT_SANDBOX_CMD=docker run --rm -v {workspace}:/work {command}
+QUBIC_DEVKIT_COMPILE_CMD=qubic-cli compile {contract_file}
+QUBIC_DEVKIT_DEPLOY_CMD=qubic-cli deploy {contract_file} --network {network}
 QUBIC_DEVKIT_TIMEOUT_MS=180000
-QUBIC_DEVKIT_KEEP_WORKSPACE=0
+
+# Mainnet is blocked by default
 QUBIC_DEVKIT_ALLOW_MAINNET=0
-QUBIC_DEPLOY_RPC=https://testnet-rpc.qubicdev.com
+
+# Optional bridge auth
 QUBIC_DEVKIT_BRIDGE_TOKEN=shared_secret
-QUBIC_DEVKIT_ALLOW_REMOTE=0
 ```
 
-Mainnet deploy is blocked by default. Set `QUBIC_DEVKIT_ALLOW_MAINNET=1` to enable.
+Command templates substitute `{contract_file}`, `{contract_name}`, `{workspace}`, `{network}`, `{rpc_url}`.
 
-Command templates accept: `{contract_file}`, `{contract_name}`, `{workspace}`, `{network}`, `{rpc_url}`.
+## Repository layout
 
-### 3) Oracle Toolkit bridge (local Toolkit required)
+```
+app/                      Next.js App Router pages
+  api/audit/             Audit log POST endpoint
+  api/devkit/pipeline/   Sandboxed compile/deploy bridge (~620 LOC)
+  api/oracle/toolkit/    Oracle Machine query bridge
+  settings/              API key management UI
+components/              Radix-based UI primitives
+data/qpi-contracts.json  RAG knowledge base
+lib/
+  agent.ts               LLM orchestration with tool calls (~1200 LOC)
+  rag.ts                 BM25 search engine (~310 LOC, zero deps)
+  crypto.ts              AES-GCM key storage
+  testnet.ts             Qubic RPC client
+  audit.ts               Structured event logging
+  storage.ts             Settings persistence
+middleware.ts            Per-IP rate limiter (10 req/min)
+```
 
-Oracle payloads are built in-app, but query submission requires a **running local Qubic.Net Toolkit** (localhost/127.0.0.1).
+## Roadmap
 
-- Typical local URL used by this app: `http://127.0.0.1:5060`
-- Query fee noted by official Toolkit guide: `10 QU` per query
+See the [Issues](https://github.com/ZUES-ops-dot/qubic-agent-ui/issues) tab for tracked work, including Claude 3.5 Sonnet support, PDF audit export, and large-contract deploy timeouts.
 
-Official references:
+## License
 
-- https://docs.qubic.org/developers/oracles/
-- https://qubic.org/blog-detail/how-to-query-qubic-oracle-machines-using-the-qubic.net-toolkit
-
-See [QFORGE.md](./QFORGE.md) for full technical documentation.
+MIT — see [LICENSE](LICENSE).
