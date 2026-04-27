@@ -1,6 +1,6 @@
 #!/usr/bin/env node
 /**
- * Qubic Agent — CLI Test Harness
+ * Qubic Agent -- CLI Test Harness
  * Tests the full agent pipeline (LLM + static analysis) without running the Next.js app.
  *
  * Usage:
@@ -11,10 +11,10 @@
  *   node scripts/test-agent.mjs --verbose
  *
  * Env vars (alternative to flags):
- *   GOOGLE_API_KEY   — Google Gemini API key
- *   OPENAI_API_KEY   — OpenAI API key
- *   PROVIDER         — "google" (default) or "openai"
- *   MODEL            — model name (default: gemini-2.5-flash)
+ *   GOOGLE_API_KEY   -- Google Gemini API key
+ *   OPENAI_API_KEY   -- OpenAI API key
+ *   PROVIDER         -- "google" (default) or "openai"
+ *   MODEL            -- model name (default: gemini-2.5-flash)
  */
 
 import { parseArgs } from 'node:util';
@@ -78,17 +78,17 @@ function info(text) {
 // ── System prompt (mirrors lib/agent.ts) ─────────────────────────────────────
 const SYSTEM_PROMPT = `You are an expert Qubic smart contract developer. \
 Qubic uses QPI (Qubic Programming Interface), a sandboxed subset of C++. \
-Contracts run directly on 676 Computors hardware — not a VM. \
+Contracts run directly on 676 Computors hardware -- not a VM. \
 You must follow QPI rules exactly.
 
-TYPES — Only QPI types allowed:
+TYPES -- Only QPI types allowed:
 - Primitives: bit, uint8, uint16, uint32, uint64, sint8, sint16, sint32, sint64, id
 - Containers: Array<T,L>, BitArray<L>, Collection<T,L>, HashMap<K,V,L>, HashSet<K,L> (L must be power of 2)
 - BANNED: bool, int, char, float, double, long, short, pointers, std::anything, [] notation
 
 OPERATORS:
 - BANNED: / and %
-- USE INSTEAD: div(a,b) and mod(a,b) — return 0 on division by zero
+- USE INSTEAD: div(a,b) and mod(a,b) -- return 0 on division by zero
 
 CONTRACT STRUCTURE (mandatory):
   using namespace QPI;
@@ -123,9 +123,9 @@ ORACLE MACHINES:
 
 DEPLOYMENT (not like Ethereum):
 1. Write .h file in qubic/core src/contracts/
-2. Submit PR — reviewed by core devs
+2. Submit PR -- reviewed by core devs
 3. Multi-node testnet validation
-4. Submit GQMPROP proposal (epoch N) — 451+ Computor votes needed
+4. Submit GQMPROP proposal (epoch N) -- 451+ Computor votes needed
 5. IPO epoch N+1 (QU burned for fee reserve)
 6. Contract live epoch N+2
 
@@ -331,7 +331,7 @@ async function main() {
   let llmSkipped = 0;
 
   if (!API_KEY) {
-    banner('LLM Integration Tests  (SKIPPED — no API key)');
+    banner('LLM Integration Tests  (SKIPPED -- no API key)');
     info('Set --key, GOOGLE_API_KEY, or OPENAI_API_KEY to run LLM tests');
     llmSkipped = LLM_TESTS.length;
   } else {

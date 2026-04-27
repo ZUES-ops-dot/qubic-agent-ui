@@ -1,4 +1,4 @@
-// RAG search facade — delegates entirely to the in-app BM25 engine in lib/rag.ts
+// RAG search facade -- delegates entirely to the in-app BM25 engine in lib/rag.ts
 // Supabase is no longer required. All search is local, offline, and zero-latency.
 
 import type { RAGDocument, Vulnerability, ContractPattern } from '@/types';
@@ -8,7 +8,7 @@ import {
   getPatterns as ragGetPatterns,
 } from './rag';
 
-// Kept for any settings page that checks this — always false now
+// Kept for any settings page that checks this -- always false now
 export function isSupabaseConfigured(): boolean {
   return false;
 }

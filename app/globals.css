@@ -456,7 +456,7 @@
   border-color: rgba(139, 92, 246, 0.1);
 }
 
-/* Compact mode — tighter spacing */
+/* Compact mode -- tighter spacing */
 .compact main { padding: 0.5rem !important; }
 .compact .space-y-6 > * + * { margin-top: 1rem; }
 .compact .space-y-4 > * + * { margin-top: 0.5rem; }
@@ -465,7 +465,7 @@
 .compact .py-8 { padding-top: 1rem; padding-bottom: 1rem; }
 .compact .text-2xl { font-size: 1.25rem; }
 
-/* Reduce motion — disable animations */
+/* Reduce motion -- disable animations */
 .reduce-motion *, .reduce-motion *::before, .reduce-motion *::after {
   animation-duration: 0.01ms !important;
   animation-iteration-count: 1 !important;

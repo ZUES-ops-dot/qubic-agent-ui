@@ -160,7 +160,7 @@ export function saveSettings(settings: Partial<Settings>): void {
   }
 }
 
-// Async settings loader — properly decrypts AES-GCM keys
+// Async settings loader -- properly decrypts AES-GCM keys
 export async function getSettingsAsync(): Promise<Settings> {
   if (!isBrowser) return defaultSettings;
 

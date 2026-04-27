@@ -169,7 +169,7 @@ export function encryptStoredSecret(secret: string): string {
 
 export function decryptApiKey(encryptedKey: string): string {
   if (!encryptedKey) return '';
-  // AES-encrypted keys need async decryption — handled by decryptApiKeyAsync
+  // AES-encrypted keys need async decryption -- handled by decryptApiKeyAsync
   if (encryptedKey.startsWith(AES_PREFIX)) {
     // Sync fallback: return empty and let async path handle it
     // This shouldn't happen in practice because getSettings calls decryptApiKeyAsync
@@ -189,7 +189,7 @@ export function decryptStoredSecret(storedValue: string): string {
   return storedValue;
 }
 
-// Async decryption for AES values — called by storage layer
+// Async decryption for AES values -- called by storage layer
 export async function decryptApiKeyAsync(encryptedKey: string): Promise<string> {
   if (!encryptedKey) return '';
   if (encryptedKey.startsWith(AES_PREFIX)) {

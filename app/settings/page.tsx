@@ -615,7 +615,7 @@ export default function SettingsPage() {
                       <div className="p-4 rounded-xl border border-[#10B981]/30 bg-[#10B981]/5">
                         <p className="text-sm font-semibold text-[#10B981]">Network: Testnet</p>
                         <p className="text-xs text-[#A3A3A3] mt-2">
-                          All Dev Kit pipeline actions target the Qubic testnet. Mainnet deployment requires a computor proposal, community vote (451 of 676 computors), and a successful IPO — this cannot be done through this tool.
+                          All Dev Kit pipeline actions target the Qubic testnet. Mainnet deployment requires a computor proposal, community vote (451 of 676 computors), and a successful IPO -- this cannot be done through this tool.
                         </p>
                       </div>
 

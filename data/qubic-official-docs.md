@@ -1,4 +1,4 @@
-# Qubic Official Documentation — Knowledge Base
+# Qubic Official Documentation -- Knowledge Base
 
 > Compiled from docs.qubic.org, qubic/core, qubic/qubic-cli, qubic/qubic-dev-kit, and related resources.
 
@@ -12,11 +12,11 @@ Each smart contract can be launched through an IPO (Initial Public Offering), a 
 
 ### Key Features
 
-1. **Baremetal Execution** — Smart contracts run directly on the hardware—without an OS, VM, or container layer—allowing extremely low-level control, high-speed execution, and minimal overhead.
+1. **Baremetal Execution** -- Smart contracts run directly on the hardware--without an OS, VM, or container layer--allowing extremely low-level control, high-speed execution, and minimal overhead.
 
-2. **IPO-Based Deployment (Initial Public Offering)** — Each contract must be proposed through a voting process, where the computor allocates compute resources for its execution. If the proposal is accepted, the contract will be integrated into the core code, after which the IPO process takes place. If all shares are successfully sold during the IPO, the contract will be constructed.
+2. **IPO-Based Deployment (Initial Public Offering)** -- Each contract must be proposed through a voting process, where the computor allocates compute resources for its execution. If the proposal is accepted, the contract will be integrated into the core code, after which the IPO process takes place. If all shares are successfully sold during the IPO, the contract will be constructed.
 
-3. **No Virtual Machine, No Gas Model** — There is no EVM-like gas mechanism. Instead, compute resources are provisioned via IPO and scheduled execution, avoiding the need for micro-fees or instruction-based billing.
+3. **No Virtual Machine, No Gas Model** -- There is no EVM-like gas mechanism. Instead, compute resources are provisioned via IPO and scheduled execution, avoiding the need for micro-fees or instruction-based billing.
 
 ### From Code to Mainnet
 
@@ -26,7 +26,7 @@ Building a smart contract is only the first step. Before your contract runs on m
 
 ## Qubic Programming Interface (QPI)
 
-QPI stands for Qubic Programming Interface — a carefully designed and restricted programming interface used to develop smart contracts in the Qubic protocol.
+QPI stands for Qubic Programming Interface -- a carefully designed and restricted programming interface used to develop smart contracts in the Qubic protocol.
 
 Unlike general-purpose C++ programming, QPI provides a safe, deterministic, and sandboxed environment that ensures all contracts behave consistently across all nodes in the Qubic network.
 
@@ -92,10 +92,10 @@ public:
 
 ### Key Elements
 
-- `using namespace QPI;` — Brings all QPI symbols into scope.
-- `struct MYTEST2` — Used for state expansion via EXPAND procedure (not yet implemented).
-- `struct MYTEST : public ContractBase` — Main contract struct. Inheriting from `ContractBase` is **mandatory**.
-- `REGISTER_USER_FUNCTIONS_AND_PROCEDURES()` — Registration block for making functions/procedures callable.
+- `using namespace QPI;` -- Brings all QPI symbols into scope.
+- `struct MYTEST2` -- Used for state expansion via EXPAND procedure (not yet implemented).
+- `struct MYTEST : public ContractBase` -- Main contract struct. Inheriting from `ContractBase` is **mandatory**.
+- `REGISTER_USER_FUNCTIONS_AND_PROCEDURES()` -- Registration block for making functions/procedures callable.
 
 ---
 
@@ -112,7 +112,7 @@ bit isWrong = false;
 ```
 
 ### Id
-Represents user public key — 256 bits:
+Represents user public key -- 256 bits:
 ```cpp
 id user1 = id(1,2,3,4);
 ```
@@ -271,7 +271,7 @@ Returns the ID of the entity that directly called the current contract procedure
 Returns zero public key when called inside a function (unless function is called from a procedure).
 
 ### qpi.originator()
-Returns the ID of the original transaction sender — the entity that initiated the entire call chain.
+Returns the ID of the original transaction sender -- the entity that initiated the entire call chain.
 
 | Function | Returns | Example (Alice → ContractA → ContractB) |
 |---|---|---|
@@ -320,7 +320,7 @@ All return UTC values.
 
 ## States
 
-The state is the persistent data of a contract — the member variables defined within the contract struct. It must remain identical across all nodes. The state is passed to functions & procedures as `state`.
+The state is the persistent data of a contract -- the member variables defined within the contract struct. It must remain identical across all nodes. The state is passed to functions & procedures as `state`.
 
 ```cpp
 struct MYTEST : public ContractBase
@@ -417,7 +417,7 @@ The called contract must have a **lower contract index**.
 - **Curly braces**: Always on new line
 - **User-defined types**: Declared inside contract struct
 - **Errors**: Declared as `enum ContractNameError`
-- **`SELF`**: Contract id (public key) — equivalent to `id(CONTRACT_INDEX, 0, 0, 0)`
+- **`SELF`**: Contract id (public key) -- equivalent to `id(CONTRACT_INDEX, 0, 0, 0)`
 - **`SELF_INDEX`**: Contract index number
 - **String**: Using `""` is prohibited. Use custom string implementations.
 - **Initialization**: Always initialize state in `INITIALIZE()` procedure
@@ -439,7 +439,7 @@ The called contract must have a **lower contract index**.
 9. Core Dev Review
 10. Computor Proposal (Epoch X)
 11. Voting Phase (451 of 676 computors must participate, majority approval)
-12. IPO — Dutch Auction (Epoch X+1, all 676 shares must sell)
+12. IPO -- Dutch Auction (Epoch X+1, all 676 shares must sell)
 13. Contract Goes Live (Epoch X+2)
 
 ### Timeline
@@ -455,7 +455,7 @@ The called contract must have a **lower contract index**.
 
 ### Critical: IPO Must Succeed
 
-All 676 shares must be sold. If the IPO fails, the contract is **permanently broken** — it cannot be re-IPO'd, the execution fee reserve stays at zero, and it can never be activated.
+All 676 shares must be sold. If the IPO fails, the contract is **permanently broken** -- it cannot be re-IPO'd, the execution fee reserve stays at zero, and it can never be activated.
 
 ### Post-Launch
 
@@ -605,7 +605,7 @@ Key difference: **Function calls are executed immediately; procedures are not** 
 
 ## Qubic Name Service (QNS)
 
-> Reference implementation only — not the production QNS.
+> Reference implementation only -- not the production QNS.
 
 - Domain registration and renewal (2M QU/year)
 - Subdomain management

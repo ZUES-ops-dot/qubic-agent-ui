@@ -167,10 +167,10 @@ const tools = [
   }
 ];
 
-// System prompt for the agent — accurate QPI rules sourced from official contracts.md and qubic/core
-const SYSTEM_PROMPT = `You are an expert Qubic smart contract developer. Qubic uses QPI (Qubic Programming Interface), a sandboxed subset of C++. Contracts run directly on 676 Computors' hardware — not a VM. You must follow these rules exactly. Source: github.com/qubic/core/blob/main/doc/contracts.md
+// System prompt for the agent -- accurate QPI rules sourced from official contracts.md and qubic/core
+const SYSTEM_PROMPT = `You are an expert Qubic smart contract developer. Qubic uses QPI (Qubic Programming Interface), a sandboxed subset of C++. Contracts run directly on 676 Computors' hardware -- not a VM. You must follow these rules exactly. Source: github.com/qubic/core/blob/main/doc/contracts.md
 
-STRUCTURE — Every contract is a single .h file:
+STRUCTURE -- Every contract is a single .h file:
 
 using namespace QPI;
 struct MYCONTRACT : public ContractBase {
@@ -200,13 +200,13 @@ private:
     }
 };
 
-TYPES — Only QPI types. Never native C++ types.
+TYPES -- Only QPI types. Never native C++ types.
 ALLOWED: bit (boolean), uint8, uint16, uint32, uint64, sint8, sint16, sint32, sint64, id (addresses/public keys)
 CONTAINERS: Array<T,L> (L must be power of 2), BitArray<L>, Collection<T,L>, HashMap<KeyT,ValueT,L>, HashSet<KeyT,L>
 BANNED: bool, int, char, float, double, long, short, std::anything, [] notation, pointers, malloc/new/delete
 
 OPERATORS:
-BANNED: / and %. USE: div(a,b) and mod(a,b) — they return 0 on division by zero.
+BANNED: / and %. USE: div(a,b) and mod(a,b) -- they return 0 on division by zero.
 
 C++ RESTRICTIONS (from official contracts.md):
 - LOCAL VARIABLES ON THE STACK ARE FORBIDDEN. No for(int i=0;...). Use _WITH_LOCALS macros and define a _locals struct.
@@ -223,7 +223,7 @@ C++ RESTRICTIONS (from official contracts.md):
 - Global variables forbidden (only constants prefixed with contract name)
 - Recursion depth limit: 10
 
-LOCAL VARIABLES — Use _WITH_LOCALS pattern:
+LOCAL VARIABLES -- Use _WITH_LOCALS pattern:
 struct MyProc_locals { uint64 temp; uint32 i; };
 PUBLIC_PROCEDURE_WITH_LOCALS(MyProc) { locals.temp = 0; ... }
 Available: PUBLIC_FUNCTION_WITH_LOCALS, PUBLIC_PROCEDURE_WITH_LOCALS, PRIVATE_FUNCTION_WITH_LOCALS, PRIVATE_PROCEDURE_WITH_LOCALS, INITIALIZE_WITH_LOCALS, BEGIN_EPOCH_WITH_LOCALS, etc.
@@ -234,16 +234,16 @@ FUNCTION vs PROCEDURE:
 - PRIVATE_FUNCTION/PRIVATE_PROCEDURE: Same but NOT callable by other contracts.
 - Functions CAN be called by procedures. Procedures CANNOT be called by functions.
 
-REGISTER — Functions and procedures have SEPARATE inputType namespaces:
-REGISTER_USER_FUNCTION(Name, inputType)  — inputType 1-65535
-REGISTER_USER_PROCEDURE(Name, inputType) — inputType 1-65535
+REGISTER -- Functions and procedures have SEPARATE inputType namespaces:
+REGISTER_USER_FUNCTION(Name, inputType)  -- inputType 1-65535
+REGISTER_USER_PROCEDURE(Name, inputType) -- inputType 1-65535
 The SAME inputType number CAN be used for both a function AND a procedure.
 
 SYSTEM PROCEDURES (lifecycle hooks):
-INITIALIZE — Once after IPO, before construction epoch
-BEGIN_EPOCH / END_EPOCH — Before/after each epoch
-BEGIN_TICK / END_TICK — Before/after each tick
-POST_INCOMING_TRANSFER — After QU received (use input.sourceId, NOT qpi.invocator())
+INITIALIZE -- Once after IPO, before construction epoch
+BEGIN_EPOCH / END_EPOCH -- Before/after each epoch
+BEGIN_TICK / END_TICK -- Before/after each tick
+POST_INCOMING_TRANSFER -- After QU received (use input.sourceId, NOT qpi.invocator())
 
 QPI CONTEXT:
 In functions (QpiContextFunctionCall qpi): qpi.epoch(), qpi.tick(), qpi.invocator(), qpi.invocationReward(), qpi.originator(), qpi.getEntity(), qpi.numberOfShares()
@@ -251,18 +251,18 @@ In procedures (QpiContextProcedureCall qpi): all above plus qpi.transfer(), qpi.
 
 HANDLING QU PAYMENTS:
 if (qpi.invocationReward() > 0) { qpi.transfer(qpi.invocator(), qpi.invocationReward()); }
-qpi.burn(amount) — burns QU, fills contract execution fee reserve
+qpi.burn(amount) -- burns QU, fills contract execution fee reserve
 
 ASSETS:
-qpi.issueAsset() — create asset (name: up to 7 chars, first A-Z, rest A-Z/0-9)
+qpi.issueAsset() -- create asset (name: up to 7 chars, first A-Z, rest A-Z/0-9)
 Asset identified by pair (issuer_id, asset_name)
-676 contract shares created after IPO — shareholders receive passive income
+676 contract shares created after IPO -- shareholders receive passive income
 
 INPUT/OUTPUT STRUCT RULES:
 May only use: integer types, bit, id, Array, BitArray, and structs of these.
 Complex types (Collection, HashMap, HashSet) are FORBIDDEN in input/output structs.
 
-DEPLOYMENT LIFECYCLE (NOT like Ethereum — cannot deploy to mainnet without community vote):
+DEPLOYMENT LIFECYCLE (NOT like Ethereum -- cannot deploy to mainnet without community vote):
 1. Write .h file in src/contracts/, fork qubic/core develop branch
 2. Add contract in src/contract_core/contract_def.h (index, state, description)
 3. Implement GoogleTest tests in test/contract_[name].cpp
@@ -270,9 +270,9 @@ DEPLOYMENT LIFECYCLE (NOT like Ethereum — cannot deploy to mainnet without com
 5. Security audit (optional but highly recommended)
 6. Open PR to develop branch, Core dev review
 7. Test on local testnet (Qubic Core Lite recommended) or multi-node testnet
-8. Submit computor proposal via GQMPROP (epoch N) — 451 of 676 computors must participate, majority approval
-9. IPO Dutch Auction in epoch N+1 — ALL 676 shares must sell or contract is permanently broken
-10. Contract goes live in epoch N+2 — automatic construction
+8. Submit computor proposal via GQMPROP (epoch N) -- 451 of 676 computors must participate, majority approval
+9. IPO Dutch Auction in epoch N+1 -- ALL 676 shares must sell or contract is permanently broken
+10. Contract goes live in epoch N+2 -- automatic construction
 Post-launch: bug fixes via PR (no new vote), new features require new proposal + vote
 Execution fees: contract must burn QU (qpi.burn()) to stay active; if reserve hits zero, execution stops
 
@@ -282,10 +282,10 @@ State struct: full uppercase (e.g., MYCONTRACT)
 Style: camelCase for functions/procedures, ALL_CAPS for constants prefixed with contract name
 Curly braces always on new line. User types declared inside contract struct.
 
-TESTING (testnet only — this tool targets testnet):
+TESTING (testnet only -- this tool targets testnet):
 Testnet RPC: https://testnet-rpc.qubicdev.com
-POST /v1/querySmartContract — read contract state
-POST /v1/broadcast-transaction — execute procedures
+POST /v1/querySmartContract -- read contract state
+POST /v1/broadcast-transaction -- execute procedures
 CLI: qubic-cli for direct node interaction (build from source recommended)
 Faucet: Qubic Discord #bot-commands channel
 
@@ -308,9 +308,9 @@ TOOLS & WORKFLOW:
 You have access to tools to search the Qubic knowledge base (50+ curated entries + full official docs).
 CRITICAL RULES:
 1. BEFORE generating ANY QPI contract code, ALWAYS call search_contracts first to find relevant official patterns and examples. Base your code on what the search returns.
-2. When a user asks about QPI features, lifecycle, restrictions, or deployment — search first, then answer with grounded facts.
-3. When a user asks about security concerns — call search_vulnerabilities.
-4. When a user provides contract code to review — call analyze_contract.
+2. When a user asks about QPI features, lifecycle, restrictions, or deployment -- search first, then answer with grounded facts.
+3. When a user asks about security concerns -- call search_vulnerabilities.
+4. When a user provides contract code to review -- call analyze_contract.
 5. AFTER generating any contract code, ALWAYS call verify_and_fix to run the 30-check analyzer and auto-fix common issues before presenting code to the user.
 6. Never hallucinate QPI APIs. If unsure about a qpi.* function, search the knowledge base first.
 7. All code you generate must follow the official QPI style: camelCase functions/procedures, ALL_CAPS constants, curly braces on new line, _WITH_LOCALS for any local variables.`;
@@ -399,7 +399,7 @@ export async function analyzeContract(code: string, focus?: string): Promise<obj
   const bannedTypeChecks: [RegExp, string][] = [
     [/\bbool\b/, 'bool (use bit)'],
     [/(?<![us]int)\bint\b(?!8|16|32|64)/, 'int (use uint32, sint64, etc.)'],
-    [/\bchar\b/, 'char (forbidden — strings/chars banned)'],
+    [/\bchar\b/, 'char (forbidden -- strings/chars banned)'],
     [/\bfloat\b/, 'float (non-deterministic arithmetic)'],
     [/\bdouble\b/, 'double (non-deterministic arithmetic)'],
     [/\blong\b(?!\s)/, 'long (use sint64 or uint64)'],
@@ -413,15 +413,15 @@ export async function analyzeContract(code: string, focus?: string): Promise<obj
   
   // 2. Check for banned operators
   if (sanitizedCode.includes('%') && !sanitizedCode.includes('mod(')) {
-    issues.push({ type: 'critical', message: "Operator '%' is banned — use mod(a, b) instead (returns 0 on div-by-zero)" });
+    issues.push({ type: 'critical', message: "Operator '%' is banned -- use mod(a, b) instead (returns 0 on div-by-zero)" });
   }
   if (/[^a-zA-Z]\/[^/\*]/.test(sanitizedCode) && !sanitizedCode.includes('div(')) {
-    issues.push({ type: 'critical', message: "Operator '/' is banned — use div(a, b) instead (returns 0 on div-by-zero)" });
+    issues.push({ type: 'critical', message: "Operator '/' is banned -- use div(a, b) instead (returns 0 on div-by-zero)" });
   }
   
   // 3. Check for missing REGISTER block
   if (!sanitizedCode.includes('REGISTER_USER_FUNCTIONS_AND_PROCEDURES')) {
-    issues.push({ type: 'critical', message: 'Missing REGISTER_USER_FUNCTIONS_AND_PROCEDURES block — functions/procedures will not be callable' });
+    issues.push({ type: 'critical', message: 'Missing REGISTER_USER_FUNCTIONS_AND_PROCEDURES block -- functions/procedures will not be callable' });
   }
   
   // 4. Check for missing _input/_output structs
@@ -430,7 +430,7 @@ export async function analyzeContract(code: string, focus?: string): Promise<obj
     const name = fn.match(/\(([^)]+)\)/)?.[1];
     if (name) {
       if (!sanitizedCode.includes(`${name}_input`)) {
-        issues.push({ type: 'critical', message: `Missing ${name}_input struct — required for every function/procedure` });
+        issues.push({ type: 'critical', message: `Missing ${name}_input struct -- required for every function/procedure` });
       }
       if (!sanitizedCode.includes(`${name}_output`)) {
         issues.push({ type: 'critical', message: `Missing ${name}_output struct` });
@@ -440,12 +440,12 @@ export async function analyzeContract(code: string, focus?: string): Promise<obj
   
   // 5. Check for local variables on the stack (forbidden)
   if (/for\s*\(\s*(int|uint|sint|uint64|uint32)\s/.test(sanitizedCode)) {
-    issues.push({ type: 'critical', message: 'Local loop variables on stack forbidden — use _WITH_LOCALS macro and _locals struct' });
+    issues.push({ type: 'critical', message: 'Local loop variables on stack forbidden -- use _WITH_LOCALS macro and _locals struct' });
   }
   
   // 6. Check for [] array notation (forbidden)
   if (/\w+\s*\[\s*\d*\s*\]/.test(sanitizedCode)) {
-    issues.push({ type: 'critical', message: 'Characters [ and ] are forbidden — use Array<T, L> container instead' });
+    issues.push({ type: 'critical', message: 'Characters [ and ] are forbidden -- use Array<T, L> container instead' });
   }
   
   // 7. Check for preprocessor directives
@@ -455,12 +455,12 @@ export async function analyzeContract(code: string, focus?: string): Promise<obj
   
   // 8. Check for string/char literals
   if (/"[^"]*"/.test(sanitizedCode.replace(/\/\/.*$/gm, '').replace(/\/\*[\s\S]*?\*\//g, ''))) {
-    issues.push({ type: 'critical', message: 'String literals ("") are forbidden in QPI — can jump to random memory' });
+    issues.push({ type: 'critical', message: 'String literals ("") are forbidden in QPI -- can jump to random memory' });
   }
   
   // 9. Check for double underscores (reserved)
   if (/__/.test(sanitizedCode)) {
-    issues.push({ type: 'warning', message: 'Double underscores __ are reserved for internal functions — do not use in contract code' });
+    issues.push({ type: 'warning', message: 'Double underscores __ are reserved for internal functions -- do not use in contract code' });
   }
   
   // 10. Check for union keyword
@@ -470,10 +470,10 @@ export async function analyzeContract(code: string, focus?: string): Promise<obj
   
   // 11. Check for invocationReward without transfer/burn (missing refund)
   if (sanitizedCode.includes('PUBLIC_PROCEDURE') && !sanitizedCode.includes('invocationReward')) {
-    issues.push({ type: 'warning', message: 'PUBLIC_PROCEDURE without invocationReward check — consider handling/refunding QU sent by callers' });
+    issues.push({ type: 'warning', message: 'PUBLIC_PROCEDURE without invocationReward check -- consider handling/refunding QU sent by callers' });
   }
   if (sanitizedCode.includes('invocationReward') && !sanitizedCode.includes('qpi.transfer') && !sanitizedCode.includes('qpi.burn')) {
-    issues.push({ type: 'warning', message: 'invocationReward checked but no qpi.transfer or qpi.burn — QU may be locked in contract' });
+    issues.push({ type: 'warning', message: 'invocationReward checked but no qpi.transfer or qpi.burn -- QU may be locked in contract' });
   }
   
   // 12. Check for missing ContractBase
@@ -498,12 +498,12 @@ export async function analyzeContract(code: string, focus?: string): Promise<obj
   
   // ========== SEMANTIC VALIDATION (logic bugs, security flaws) ==========
   
-  // 16. State modification inside PUBLIC_FUNCTION (silent bug — state is const)
+  // 16. State modification inside PUBLIC_FUNCTION (silent bug -- state is const)
   const functionBlocks = sanitizedCode.match(/PUBLIC_FUNCTION(?:_WITH_LOCALS)?\([^)]+\)\s*\{[\s\S]*?\}/g) || [];
   for (const block of functionBlocks) {
     if (/state\.\w+\s*[+\-\*]?=/.test(block) || /state\.\w+\s*\+\+/.test(block)) {
       const fnName = block.match(/PUBLIC_FUNCTION(?:_WITH_LOCALS)?\(([^)]+)\)/)?.[1] || '?';
-      issues.push({ type: 'critical', message: `State modification in PUBLIC_FUNCTION(${fnName}) — state is const in functions. Use PUBLIC_PROCEDURE instead.` });
+      issues.push({ type: 'critical', message: `State modification in PUBLIC_FUNCTION(${fnName}) -- state is const in functions. Use PUBLIC_PROCEDURE instead.` });
     }
   }
   
@@ -511,22 +511,22 @@ export async function analyzeContract(code: string, focus?: string): Promise<obj
   for (const block of functionBlocks) {
     if (/qpi\.(transfer|burn|issueAsset)\s*\(/.test(block)) {
       const fnName = block.match(/PUBLIC_FUNCTION(?:_WITH_LOCALS)?\(([^)]+)\)/)?.[1] || '?';
-      issues.push({ type: 'critical', message: `qpi.transfer/burn/issueAsset in PUBLIC_FUNCTION(${fnName}) — only allowed in procedures` });
+      issues.push({ type: 'critical', message: `qpi.transfer/burn/issueAsset in PUBLIC_FUNCTION(${fnName}) -- only allowed in procedures` });
     }
   }
   
-  // 18. qpi.invocator() inside POST_INCOMING_TRANSFER (returns 0 — use input.sourceId)
+  // 18. qpi.invocator() inside POST_INCOMING_TRANSFER (returns 0 -- use input.sourceId)
   const postTransferBlocks = sanitizedCode.match(/POST_INCOMING_TRANSFER(?:_WITH_LOCALS)?\s*\{[\s\S]*?\}/g) || [];
   for (const block of postTransferBlocks) {
     if (block.includes('qpi.invocator()')) {
-      issues.push({ type: 'critical', message: 'qpi.invocator() returns 0 in POST_INCOMING_TRANSFER — use input.sourceId instead' });
+      issues.push({ type: 'critical', message: 'qpi.invocator() returns 0 in POST_INCOMING_TRANSFER -- use input.sourceId instead' });
     }
     if (block.includes('qpi.invocationReward()')) {
-      issues.push({ type: 'critical', message: 'qpi.invocationReward() returns 0 in POST_INCOMING_TRANSFER — use input.amount instead' });
+      issues.push({ type: 'critical', message: 'qpi.invocationReward() returns 0 in POST_INCOMING_TRANSFER -- use input.amount instead' });
     }
   }
   
-  // 19. REGISTER mismatch — defined functions/procedures not registered
+  // 19. REGISTER mismatch -- defined functions/procedures not registered
   const registeredFunctions = sanitizedCode.match(/REGISTER_USER_FUNCTION\(\s*(\w+)/g)?.map(m => m.match(/\(\s*(\w+)/)?.[1]) || [];
   const registeredProcedures = sanitizedCode.match(/REGISTER_USER_PROCEDURE\(\s*(\w+)/g)?.map(m => m.match(/\(\s*(\w+)/)?.[1]) || [];
   for (const fn of allFunctions) {
@@ -546,10 +546,10 @@ export async function analyzeContract(code: string, focus?: string): Promise<obj
   const fnIndices = sanitizedCode.match(/REGISTER_USER_FUNCTION\(\s*\w+\s*,\s*(\d+)\s*\)/g)?.map(m => m.match(/,\s*(\d+)/)?.[1]) || [];
   const procIndices = sanitizedCode.match(/REGISTER_USER_PROCEDURE\(\s*\w+\s*,\s*(\d+)\s*\)/g)?.map(m => m.match(/,\s*(\d+)/)?.[1]) || [];
   if (new Set(fnIndices).size < fnIndices.length) {
-    issues.push({ type: 'critical', message: 'Duplicate inputType index in REGISTER_USER_FUNCTION — each function needs a unique index' });
+    issues.push({ type: 'critical', message: 'Duplicate inputType index in REGISTER_USER_FUNCTION -- each function needs a unique index' });
   }
   if (new Set(procIndices).size < procIndices.length) {
-    issues.push({ type: 'critical', message: 'Duplicate inputType index in REGISTER_USER_PROCEDURE — each procedure needs a unique index' });
+    issues.push({ type: 'critical', message: 'Duplicate inputType index in REGISTER_USER_PROCEDURE -- each procedure needs a unique index' });
   }
   
   // 21. Container capacity not power of 2
@@ -557,7 +557,7 @@ export async function analyzeContract(code: string, focus?: string): Promise<obj
   for (const match of capacityMatches) {
     const cap = parseInt(match.match(/,\s*(\d+)\s*>/)?.[1] || '0');
     if (cap > 0 && (cap & (cap - 1)) !== 0) {
-      issues.push({ type: 'critical', message: `Container capacity ${cap} is not a power of 2 — required for Array, BitArray, Collection, HashMap, HashSet` });
+      issues.push({ type: 'critical', message: `Container capacity ${cap} is not a power of 2 -- required for Array, BitArray, Collection, HashMap, HashSet` });
     }
   }
   
@@ -566,7 +566,7 @@ export async function analyzeContract(code: string, focus?: string): Promise<obj
   for (const block of ioStructBlocks) {
     if (/\b(Collection|HashMap|HashSet)\b/.test(block)) {
       const structName = block.match(/struct\s+(\w+)/)?.[1] || '?';
-      issues.push({ type: 'critical', message: `${structName} uses Collection/HashMap/HashSet — complex types forbidden in input/output structs` });
+      issues.push({ type: 'critical', message: `${structName} uses Collection/HashMap/HashSet -- complex types forbidden in input/output structs` });
     }
   }
   
@@ -575,18 +575,18 @@ export async function analyzeContract(code: string, focus?: string): Promise<obj
   for (const block of tickBlocks) {
     if (/\bfor\s*\(/.test(block) || /\bwhile\s*\(/.test(block)) {
       const hookName = block.match(/(BEGIN_TICK|END_TICK)/)?.[1] || '?';
-      issues.push({ type: 'warning', message: `Loop in ${hookName} — runs every tick, ensure bounded iteration to avoid DoS` });
+      issues.push({ type: 'warning', message: `Loop in ${hookName} -- runs every tick, ensure bounded iteration to avoid DoS` });
     }
   }
   
-  // 24. Integer overflow — arithmetic without bounds checking
+  // 24. Integer overflow -- arithmetic without bounds checking
   if (/state\.\w+\s*=\s*state\.\w+\s*\+\s*/.test(sanitizedCode) && !/if\s*\(.*<.*MAX/.test(sanitizedCode)) {
-    issues.push({ type: 'warning', message: 'Arithmetic on state variables without overflow guard — uint64 silently wraps on overflow' });
+    issues.push({ type: 'warning', message: 'Arithmetic on state variables without overflow guard -- uint64 silently wraps on overflow' });
   }
   
   // 25. Missing INITIALIZE block
   if (!sanitizedCode.includes('INITIALIZE') && sanitizedCode.includes('ContractBase')) {
-    issues.push({ type: 'warning', message: 'Missing INITIALIZE block — state variables will be uninitialized after IPO' });
+    issues.push({ type: 'warning', message: 'Missing INITIALIZE block -- state variables will be uninitialized after IPO' });
   }
   
   // 26. Asset name validation
@@ -594,28 +594,28 @@ export async function analyzeContract(code: string, focus?: string): Promise<obj
   for (const match of assetNameMatches) {
     const name = match.match(/"([^"]+)"/)?.[1] || '';
     if (name && !/^[A-Z][A-Z0-9]{0,6}$/.test(name)) {
-      issues.push({ type: 'critical', message: `Asset name "${name}" invalid — must be 1-7 chars, first A-Z, rest A-Z or 0-9` });
+      issues.push({ type: 'critical', message: `Asset name "${name}" invalid -- must be 1-7 chars, first A-Z, rest A-Z or 0-9` });
     }
   }
   
   // 27. HashMap/HashSet without cleanup at END_EPOCH
   if (/\b(HashMap|HashSet|Collection)\b/.test(sanitizedCode) && !sanitizedCode.includes('cleanup') && !sanitizedCode.includes('reset()')) {
-    issues.push({ type: 'warning', message: 'HashMap/HashSet/Collection used without cleanup() or reset() — call at END_EPOCH to reclaim hash slots' });
+    issues.push({ type: 'warning', message: 'HashMap/HashSet/Collection used without cleanup() or reset() -- call at END_EPOCH to reclaim hash slots' });
   }
   
-  // 28. Function calling procedure (forbidden — functions cannot call procedures)
+  // 28. Function calling procedure (forbidden -- functions cannot call procedures)
   for (const block of functionBlocks) {
     for (const procName of registeredProcedures) {
       if (procName && /^[A-Za-z_]\w*$/.test(procName) && new RegExp(`\\b${procName}\\s*\\(`).test(block)) {
         const fnName = block.match(/PUBLIC_FUNCTION(?:_WITH_LOCALS)?\(([^)]+)\)/)?.[1] || '?';
-        issues.push({ type: 'warning', message: `Function ${fnName} may be calling procedure ${procName} — functions cannot call procedures` });
+        issues.push({ type: 'warning', message: `Function ${fnName} may be calling procedure ${procName} -- functions cannot call procedures` });
       }
     }
   }
   
-  // 29. Oracle pattern detection — inform about Oracle Machine integration
+  // 29. Oracle pattern detection -- inform about Oracle Machine integration
   if (/oracle|price.?feed|external.?data|real.?world/i.test(sanitizedCode)) {
-    issues.push({ type: 'info', message: 'Oracle pattern detected — use Qubic Oracle Machines for real-world data. Query via OracleMachineQuery, receive OracleMachineReply (3-5 tick latency).' });
+    issues.push({ type: 'info', message: 'Oracle pattern detected -- use Qubic Oracle Machines for real-world data. Query via OracleMachineQuery, receive OracleMachineReply (3-5 tick latency).' });
   }
   
   // 30. Recursion detection (limit: 10 levels)
@@ -624,7 +624,7 @@ export async function analyzeContract(code: string, focus?: string): Promise<obj
     if (!/^[A-Za-z_]\w*$/.test(fnName)) continue;
     const fnBlock = sanitizedCode.match(new RegExp(`(?:PUBLIC|PRIVATE)_(?:FUNCTION|PROCEDURE)(?:_WITH_LOCALS)?\\(${fnName}\\)\\s*\\{[\\s\\S]*?\\}`));
     if (fnBlock && fnBlock[0].includes(fnName + '(')) {
-      issues.push({ type: 'warning', message: `Potential self-recursion in ${fnName} — recursion depth limit is 10 levels` });
+      issues.push({ type: 'warning', message: `Potential self-recursion in ${fnName} -- recursion depth limit is 10 levels` });
     }
   }
   

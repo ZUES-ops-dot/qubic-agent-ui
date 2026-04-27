@@ -1,4 +1,4 @@
-// In-App RAG Engine — pure TypeScript, zero external dependencies
+// In-App RAG Engine -- pure TypeScript, zero external dependencies
 // BM25-inspired TF-IDF scoring over the local QPI knowledge base.
 // No Supabase required. Works offline. Indexes at module load time.
 
@@ -269,7 +269,7 @@ export function getPatterns(type?: string): ContractPattern[] {
     applied: Math.max(1, 25 - idx),
     total: Math.max(2, 27 - idx),
     preconditions: entry.tags.map(tag => `Relevant when working with: ${tag}`),
-    evidence: `Source: ${entry.source} — verified QPI code from Qubic repositories`,
+    evidence: `Source: ${entry.source} -- verified QPI code from Qubic repositories`,
   }));
 }
 

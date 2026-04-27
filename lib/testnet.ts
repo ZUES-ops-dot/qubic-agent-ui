@@ -277,7 +277,7 @@ export async function deployContract(code: string, network: DeploymentNetwork = 
   };
 }
 
-// Run simulation — uses real static analysis + RPC status to derive metrics
+// Run simulation -- uses real static analysis + RPC status to derive metrics
 export async function runSimulation(
   contractId: string,
   config: SimulationConfig,
@@ -313,7 +313,7 @@ export async function runSimulation(
         const queryResult = await querySmartContract(rpcUrl, 0, 1, 0, '');
         console.log('[Simulation] Contract query response:', queryResult.responseData ? 'data received' : 'empty');
       } catch {
-        // Contract query is best-effort — most user contracts won't be deployed yet
+        // Contract query is best-effort -- most user contracts won't be deployed yet
         console.log('[Simulation] Contract query skipped (not deployed or invalid index)');
       }
     }

@@ -122,7 +122,7 @@ export default function AuditPage() {
         const staticVulns: Vulnerability[] = staticResult.issues.map((issue, idx) => ({
           id: `s${idx + 1}`,
           severity: issueSeverity(issue.type),
-          title: issue.message.split('—')[0].trim().toLowerCase().replace(/\s+/g, '.').slice(0, 40),
+          title: issue.message.split('--')[0].trim().toLowerCase().replace(/\s+/g, '.').slice(0, 40),
           line: 0,
           confidence: issue.type === 'critical' ? 0.95 : issue.type === 'warning' ? 0.80 : 0.60,
           description: issue.message,
@@ -229,7 +229,7 @@ Return ONLY a JSON object with this exact structure (no markdown formatting):
         const fbVulns: Vulnerability[] = fallback.issues.map((issue, idx) => ({
           id: `f${idx + 1}`,
           severity: issueSeverity(issue.type),
-          title: issue.message.split('—')[0].trim().toLowerCase().replace(/\s+/g, '.').slice(0, 40),
+          title: issue.message.split('--')[0].trim().toLowerCase().replace(/\s+/g, '.').slice(0, 40),
           line: 0,
           confidence: issue.type === 'critical' ? 0.95 : 0.80,
           description: issue.message,

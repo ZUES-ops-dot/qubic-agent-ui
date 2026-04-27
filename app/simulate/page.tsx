@@ -253,7 +253,7 @@ function SimulatePageScreen({ searchParams }: { searchParams: SearchParamsLike }
           metric: 'Security', 
           score: securityScore, 
           status: securityScore >= 80 ? 'pass' : securityScore >= 50 ? 'warning' : 'fail', 
-          details: metrics.errors === 0 ? 'No QPI violations detected' : `${metrics.errors} violation(s) — banned types, operators, or structural issues` 
+          details: metrics.errors === 0 ? 'No QPI violations detected' : `${metrics.errors} violation(s) -- banned types, operators, or structural issues` 
         },
       ];
 

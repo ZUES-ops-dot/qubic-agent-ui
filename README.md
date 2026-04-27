@@ -1,4 +1,4 @@
-# QForge — AI Smart Contract IDE for Qubic
+# QForge -- AI Smart Contract IDE for Qubic
 
 ![Next.js](https://img.shields.io/badge/Next.js-16-black?logo=nextdotjs)
 ![TypeScript](https://img.shields.io/badge/TypeScript-5.x-3178C6?logo=typescript&logoColor=white)
@@ -14,19 +14,19 @@
 
 ## What problem this solves
 
-Qubic's QPI (Quorum Programming Interface) is a constrained C++ subset with rules that the standard compiler does not enforce — invalid contracts only fail at testnet deploy time, often after hours of dev work. QForge catches these violations in the editor, suggests AI-generated fixes against a local QPI knowledge base, and one-click deploys to testnet through a sandboxed bridge.
+Qubic's QPI (Quorum Programming Interface) is a constrained C++ subset with rules that the standard compiler does not enforce -- invalid contracts only fail at testnet deploy time, often after hours of dev work. QForge catches these violations in the editor, suggests AI-generated fixes against a local QPI knowledge base, and one-click deploys to testnet through a sandboxed bridge.
 
 **Before QForge:** Write contract → push to testnet → wait for tick → read cryptic error → repeat.
 **With QForge:** Type intent → AI scaffolds contract → 30 static checks run inline → one-click deploy.
 
 ## Highlights
 
-- **AI contract generation** — natural-language → compilable QPI via OpenAI function calling, Anthropic, or Google Gemini (BYO API key, encrypted client-side with AES-GCM)
-- **30-rule static analyzer** — catches forbidden ops, division-by-zero, state mutation outside transactions, oracle misuse, and more, with severity triage
-- **Local BM25 RAG engine** — `lib/rag.ts` indexes the official QPI docs and 50+ vetted contract patterns at module load. Zero external vector DB. Offline-capable.
-- **Sandboxed Dev Kit bridge** — opt-in shell execution wrapped through a configurable sandbox template, with mainnet gating, output truncation, timeouts, and audit logging
-- **Audit trail** — every generation/deploy attempt logged with IP, user agent, request ID, and structured metadata via `lib/audit.ts`
-- **Rate limiting** — 10 req/min/IP middleware on all API routes
+- **AI contract generation** -- natural-language → compilable QPI via OpenAI function calling, Anthropic, or Google Gemini (BYO API key, encrypted client-side with AES-GCM)
+- **30-rule static analyzer** -- catches forbidden ops, division-by-zero, state mutation outside transactions, oracle misuse, and more, with severity triage
+- **Local BM25 RAG engine** -- `lib/rag.ts` indexes the official QPI docs and 50+ vetted contract patterns at module load. Zero external vector DB. Offline-capable.
+- **Sandboxed Dev Kit bridge** -- opt-in shell execution wrapped through a configurable sandbox template, with mainnet gating, output truncation, timeouts, and audit logging
+- **Audit trail** -- every generation/deploy attempt logged with IP, user agent, request ID, and structured metadata via `lib/audit.ts`
+- **Rate limiting** -- 10 req/min/IP middleware on all API routes
 
 ## Architecture
 
@@ -138,4 +138,4 @@ See the [Issues](https://github.com/ZUES-ops-dot/qubic-agent-ui/issues) tab for 
 
 ## License
 
-MIT — see [LICENSE](LICENSE).
+MIT -- see [LICENSE](LICENSE).
