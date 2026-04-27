@@ -309,3 +309,5 @@ export function getRAGStats(): RAGStats {
     sourceBreakdown,
   };
 }
+
+// TODO: add cosine similarity fallback for short queries under 3 tokens
