@@ -332,3 +332,4 @@ export function generateChatTitle(firstMessage: string): string {
   const cleaned = firstMessage.trim().slice(0, 50);
   return cleaned.length < firstMessage.length ? cleaned + '...' : cleaned;
 }
+// TODO: add IndexedDB eviction policy for keys older than 90 days
